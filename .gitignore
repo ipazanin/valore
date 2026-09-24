@@ -9,3 +9,6 @@ coverage/
 !.env.example
 /backups/
 /local-data/
+
+/playwright-report/
+/test-results/

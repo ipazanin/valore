@@ -1,6 +1,8 @@
 # Valore — phased delivery plan
 
-Status: planning only; application implementation has not started.
+Status: Phase 1 manual MVP implemented; awaiting the maintainer’s practical testing checkpoint. Phases 2–6 have not started.
+
+CI and static hosting: the GitHub Actions workflow verifies the production build and deploys successful `main` pushes to GitHub Pages. Publication of the manual MVP and automatic deployment are authorized; the repository uses GitHub Actions as its Pages source.
 
 ## Delivery approach
 
@@ -10,7 +12,7 @@ Build a small usable MVP, test it in practical use, and add capabilities in work
 - Let the maintainer try the workflow and use that feedback to fix problems or adjust the next slice before expanding scope.
 - Keep later features in this roadmap. Resolve their detailed rules when their phase approaches; they do not block the MVP.
 - Preserve entered records and compatible backups as the app evolves. Test migrations when storage changes.
-- Continue planning only for now. This roadmap does not start application implementation or deployment.
+- Phase 1 application implementation is authorized and complete for the manual MVP. CI, publication, and automatic Pages deployment are authorized. Further product phases require separate authorization after the maintainer’s checkpoint.
 
 | Phase | Usable outcome | User test focus |
 | --- | --- | --- |
@@ -44,6 +46,8 @@ These decisions remain in force throughout the roadmap.
 Reuse the existing concepts: assets, liabilities, named accounts, instruments/listings, holdings, dated balances, valuations, and prices. Accounts group cash and holdings; their calculated totals are not additional assets. Rental links and transfer links arrive with their own phases.
 
 ## Phase 1 — manual MVP
+
+**Status:** implemented; maintainer testing pending. The application includes setup, manual account/asset/debt forms, current totals, dated IndexedDB persistence, and validated version 1 JSON backup replacement. Decimal strings and decimal.js preserve financial precision. Same-day saves replace that day’s observation; previous dates are retained. Calculation, persistence, backup, type-check, and production-build checks pass. Browser workflows pass in desktop Chromium/Firefox and phone-sized Chromium/WebKit, including a production repository path. Physical-device and personal-record testing remain part of this checkpoint.
 
 **Goal:** enter enough of a real portfolio to check today's net worth and decide whether the basic workflow is useful.
 
@@ -201,4 +205,4 @@ Outside this roadmap: shared ownership, financial goals, budgets, transaction ac
 
 Visual polish, detailed table interactions, additional descriptive fields, and operational maintenance choices can follow practical use; they do not justify a new round of detailed questions now.
 
-The next planning focus is the small Phase 1 workflow and its data/backup safety. Later phases retain the decisions already made and only need detailed discussion when implementation reaches them.
+The next step is the maintainer’s Phase 1 practical test with personal records. Fix usability and data-loss issues found there before authorizing Phase 2. Later phases retain the decisions already made and only need detailed discussion when implementation reaches them.

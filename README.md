@@ -1,25 +1,76 @@
 # Valore
 
-A personal portfolio and net-worth tracker for understanding what you own, what you owe, and how both change over time.
+A local portfolio and net-worth tracker. Phase 1 is implemented and ready for practical testing: one reporting currency, manual records and prices, current totals, and JSON backups. Later phases remain deferred in the [delivery plan](docs/plan.md).
 
-Valore is planned as a free, open-source application hosted on GitHub Pages. Portfolio records stay in the browser, with export and import for moving them between devices.
+## Run locally
 
-## Project status
+Requires Node.js 22.12 or newer and npm.
 
-Planning and repository setup. There is no runnable application yet.
+```sh
+npm ci
+npm run dev
+```
 
-The [phased delivery plan](docs/plan.md) defines the product, selected technology, and testing checkpoints. Work starts with a small manual MVP, followed by user testing before additional capabilities are introduced.
+Open the local address printed by Vite. Choose a reporting currency or restore an existing Valore backup. There is no demo portfolio, login, backend, or market-data service.
 
-## Planned approach
+```sh
+npm test             # Domain, backup validation, and Dexie persistence tests
+npm run typecheck    # TypeScript and Vue templates
+npm run build        # Typecheck and production build in dist/
+npm run preview      # Serve the production build locally
+```
 
-- Vue 3 and TypeScript, with custom components and styles.
-- IndexedDB through Dexie for local records; Pinia for shared application state.
-- Dated balances and valuations across assets, investments, cash, and liabilities.
-- Replaceable market-data providers, with manual pricing available when needed.
-- Responsive views and, in a later phase, offline PWA support.
+Browser tests use Playwright:
 
-Development commands and application setup will be documented when implementation starts.
+```sh
+npx playwright install chromium firefox webkit
+npm run test:e2e
+```
+
+The browser suite covers desktop Chromium and Firefox plus phone-sized Chromium and WebKit. Emulation does not replace testing on physical Android and iPhone devices. Unit persistence tests use real Dexie transactions with fake-indexeddb; browser tests exercise browser IndexedDB.
+
+## Phase 1 behavior
+
+- Accounts group cash and stock/ETF holdings. Holdings preserve instrument name, type, optional ISIN, listing symbol, exchange, and trading currency. Choose a saved listing to hold it in another account; its manual price applies to both.
+- Property, vehicles/possessions, Other assets, money lent, and debts are separate named records. Use current resale estimates for tangible assets and outstanding amounts for money lent or owed. Record a property and its mortgage separately.
+- All amounts and listings must already use the chosen currency. This version has no conversion and cannot change a portfolio’s currency. Restoring a complete backup restores its own currency setting; incompatible currency fields are rejected.
+- Net worth is assets minus liabilities. Account totals are only grouping. Negative cash remains signed in the account and contributes its absolute amount once to liabilities.
+- Investment value is total quantity multiplied by unit price. A positive holding with no price makes known totals incomplete; it is never assigned a zero price. Blank price updates retain any saved price. An explicitly entered zero price is valid.
+- Amounts use decimal strings and decimal.js arithmetic, with up to 18 whole digits and 12 decimal places. Enter a decimal point without thousands separators. Totals display currency precision; calculations and backups retain full precision. Unit prices and quantities display their entered precision.
+- Saves use today’s local calendar date, separately from the UTC edit timestamp. A second save on the same day corrects that day’s observation. Previous dates remain stored and exported. Latest observations carry forward; backdating and history screens are deferred.
+- Update names, balances, quantities, prices, estimates, and outstanding amounts. Investment identity and existing record categories remain fixed. To record a zero holding or repaid debt, update its quantity or amount to zero. Deletion and archival are deferred.
+
+## Storage and backups
+
+Records persist in IndexedDB through Dexie. Pinia holds the shared application state; forms keep their drafts locally. Financial calculations and validation live in `src/features/portfolio/domain`, storage in `persistence`, workflows in `application`, and Vue forms/views in `components`. Backup validation and its interface live in `src/features/backup`.
+
+Browser storage is tied to the browser profile and site origin (scheme, host, and port). Development and preview addresses can therefore hold different portfolios. Repository paths on the same origin share browser storage; Valore currently uses one database named `valore`. Use HTTPS when hosting, or localhost for development.
+
+Local records are unencrypted. Clearing site data, using private browsing, browser storage limits/eviction, or losing the device can remove them. There is no server copy or recovery account. The app is not yet a PWA and does not guarantee an offline launch.
+
+**Export backups regularly**, especially before replacing a portfolio or clearing browser storage. JSON backups are unencrypted and contain all supported records, instruments/listings, dated observations, and the reporting-currency setting. Keep them private and outside version control; `backups/` and `local-data/` are ignored.
+
+Backup format version 1 uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, references, and required observations before replacement. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
+
+## Static hosting
+
+`npm run build` creates a static `dist/` directory. Vite uses relative asset URLs (`base: './'`), so the output works under a repository path such as `/valore/` as well as at a site root. There is no client-side route requiring server rewrites.
+
+The [CI and Pages workflow](.github/workflows/pages.yml) runs on pushes to `main` and pull requests targeting `main`. It installs from the lockfile with Node.js 22, runs the calculation/persistence/backup tests, type-checks, and builds once. The browser suite then tests that exact production build at `/valore/` in desktop Chromium/Firefox and phone-sized Chromium/WebKit, including IndexedDB persistence and backup flows.
+
+Successful `main` pushes upload only `dist/` and deploy that artifact to [Valore on GitHub Pages](https://ipazanin.github.io/valore/). Pull requests only verify. A failed install, test, type check, build, or browser check prevents deployment, leaving the last successful site available. See the repository's Actions tab for the failing step; fix it and push to `main` to retry. Deployments are serialized without cancelling an active run, and the workflow adds no manual approval gate.
+
+The repository uses **GitHub Actions** under **Settings → Pages → Build and deployment → Source**. Pushes to `main` update the site automatically after successful checks. The `github-pages` environment shows the deployment URL. No custom domain, backend, or application secret is required. The published artifact contains application assets only; personal portfolios remain in each browser and private backups stay outside the repository.
+
+## Manual checkpoint
+
+1. Choose a currency. Add a cash account, a house, a mortgage, and a fractional investment holding with a manual price. Check assets minus liabilities by hand.
+2. Add negative cash and an unpriced holding. Verify signed cash, liability totals, incomplete totals, and the named unvalued holding.
+3. Update each kind of amount, reload, and check it persisted. After another day, update again and confirm both dates remain in an exported backup.
+4. Export a backup. Preview it, cancel once, then restore it in another browser. Confirm records, listing identities, dates, and currency survive.
+5. Try malformed JSON and a backup containing a foreign-currency record. Confirm rejection leaves the current portfolio intact.
+6. Try the forms with a keyboard and on an Android phone and iPhone, including backup download and file selection.
 
 ## License
 
-Valore is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE).
