@@ -19,3 +19,7 @@ The [phased delivery plan](docs/plan.md) defines the product, selected technolog
 - Responsive views and, in a later phase, offline PWA support.
 
 Development commands and application setup will be documented when implementation starts.
+
+## License
+
+Valore is licensed under the [MIT License](LICENSE).

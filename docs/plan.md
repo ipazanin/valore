@@ -28,6 +28,7 @@ Phases can be reprioritized after testing. Each phase below contains smaller del
 These decisions remain in force throughout the roadmap.
 
 - Free, open source, and hosted as a static app on GitHub Pages. Portfolio records stay in the browser; no portfolio backend, market-data server, or proxy.
+- Licensed under the [MIT License](../LICENSE).
 - One person's assets and liabilities, counted in full. No shared ownership, ownership percentages, or household-member model.
 - Mostly manual balances and valuations. Track net worth and changes in wealth, without presenting them as investment returns.
 - Fixed asset categories plus Other, with custom names for individual records.
@@ -198,6 +199,6 @@ Deliver cash transfers first, then investment transfers, then backdated-transfer
 
 Outside this roadmap: shared ownership, financial goals, budgets, transaction accounting, investment-return/tax calculations, debt-payoff forecasts, automatic depreciation, custom categories, demo portfolios, and additional interface languages. Crypto, pensions, business ownership, insurance, bank connections, and property-management workflows have not been added to scope.
 
-Choose an open-source licence before public release. Visual polish, detailed table interactions, additional descriptive fields, and operational maintenance choices can follow practical use; they do not justify a new round of detailed questions now.
+Visual polish, detailed table interactions, additional descriptive fields, and operational maintenance choices can follow practical use; they do not justify a new round of detailed questions now.
 
 The next planning focus is the small Phase 1 workflow and its data/backup safety. Later phases retain the decisions already made and only need detailed discussion when implementation reaches them.
