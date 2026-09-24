@@ -6,6 +6,7 @@ import { latestObservation } from '../domain/calculations'
 import { localToday } from '../domain/dates'
 import { displayDate } from './labels'
 import AllocationChart from './AllocationChart.vue'
+import BalanceComparisonChart from './BalanceComparisonChart.vue'
 
 const emit = defineEmits<{ navigate: [tab: 'accounts' | 'records'] }>()
 const store = usePortfolioStore()
@@ -120,6 +121,7 @@ const unvalued = computed(() =>
         </button>
       </div>
     </div>
+    <BalanceComparisonChart :overview="store.overview" :currency="currency" />
     <div class="detail-grid">
       <AllocationChart
         :overview="store.overview"
