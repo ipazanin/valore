@@ -121,7 +121,9 @@ const accounts = computed(() =>
         </div>
         <div class="row-end">
           <span class="amount" :class="{ negative: account.summary?.cash.startsWith('-') }">{{
-            formatMoney(account.summary?.cash ?? '0', currency)
+            account.cashObservation
+              ? formatMoney(account.summary?.cash ?? '0', currency)
+              : 'No observation'
           }}</span
           ><button
             class="quiet"
@@ -143,7 +145,11 @@ const accounts = computed(() =>
               }}<span v-if="holding.instrument.isin"> · {{ holding.instrument.isin }}</span></small
             >
             <small
-              >{{ formatQuantity(holding.quantity?.amount ?? '0') }} units<span
+              >{{
+                holding.quantity
+                  ? `${formatQuantity(holding.quantity.amount)} units`
+                  : 'No quantity observation'
+              }}<span
                 v-if="holding.price"
               >
                 × {{ `${currency} ${formatQuantity(holding.price.amount)}` }} / unit</span
@@ -157,7 +163,8 @@ const accounts = computed(() =>
             >
           </div>
           <div class="row-end">
-            <span v-if="holding.amount === null" class="badge warning"
+            <span v-if="!holding.quantity" class="muted">No valuation</span>
+            <span v-else-if="holding.amount === null" class="badge warning"
               >Unvalued · Price needed</span
             >
             <span v-else class="amount">{{ formatMoney(holding.amount, currency) }}</span>

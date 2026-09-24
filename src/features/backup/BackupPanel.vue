@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { usePortfolioStore } from '../portfolio/application/store'
-import { calculateOverview } from '../portfolio/domain/calculations'
+import { calculateOverview, latestObservation } from '../portfolio/domain/calculations'
 import { formatMoney } from '../portfolio/domain/format'
 import { localToday } from '../portfolio/domain/dates'
 import { parseBackup, type Backup } from './backup'
@@ -17,6 +17,18 @@ const message = ref('')
 const reading = ref(false)
 const confirmed = ref(false)
 const preview = computed(() => (backup.value ? calculateOverview(backup.value.portfolio) : null))
+const unobservedCount = computed(() => {
+  const portfolio = backup.value?.portfolio
+  if (!portfolio) return 0
+  return (
+    portfolio.accounts.filter((account) => !latestObservation(portfolio, 'cash', account.id))
+      .length +
+    portfolio.holdings.filter((holding) => !latestObservation(portfolio, 'quantity', holding.id))
+      .length +
+    portfolio.records.filter((record) => !latestObservation(portfolio, 'valuation', record.id))
+      .length
+  )
+})
 async function selectFile(event: Event) {
   backup.value = undefined
   confirmed.value = false
@@ -150,6 +162,9 @@ async function exportFile() {
             </dd>
           </div>
         </dl>
+        <p v-if="unobservedCount" class="notice">
+          {{ unobservedCount }} record(s) have no observation and are excluded from recorded totals.
+        </p>
         <p v-if="preview.incomplete" class="notice warning">
           {{ preview.unvaluedHoldings.length }} holding(s) have no price. Known totals are
           incomplete.

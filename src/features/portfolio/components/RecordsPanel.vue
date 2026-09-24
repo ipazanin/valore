@@ -70,7 +70,7 @@ async function closeForm(saved = false) {
         </div>
         <div class="record-end">
           <strong class="amount" :class="{ debt: record.category === 'debt' }">{{
-            formatMoney(record.observation?.amount ?? '0', currency)
+            record.observation ? formatMoney(record.observation.amount, currency) : 'No observation'
           }}</strong
           ><button
             class="quiet"
@@ -84,8 +84,8 @@ async function closeForm(saved = false) {
       </article>
     </div>
     <p v-if="records.length" class="muted footnote">
-      Update today’s estimate or outstanding amount at any time. Earlier dates stay saved. Set a
-      repaid loan or debt to zero; archive and history views come later.
+      Update a dated estimate or outstanding amount at any time. Use History to correct or delete
+      observations. Records without observations have no recorded value.
     </p>
   </section>
 </template>

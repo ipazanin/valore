@@ -255,8 +255,20 @@ describe('backup validation', () => {
   it('round trips all observations and settings', () => {
     const portfolio = portfolioFixture()
     const restored = parseBackup(serializeBackup(portfolio))
-    expect(restored).toMatchObject({ format: 'valore', version: 1, portfolio })
+    expect(restored).toMatchObject({ format: 'valore', version: 2, portfolio })
     expect(createBackup(portfolio).portfolio.observations).toHaveLength(5)
+  })
+
+  it('preserves version 1 backups and supports records without observations in version 2', () => {
+    const portfolio = portfolioFixture()
+    const original = { ...createBackup(portfolio), version: 1 }
+    expect(parseBackup(JSON.stringify(original)).portfolio).toEqual(portfolio)
+    portfolio.observations = []
+    expect(() => parseBackup(JSON.stringify(original))).toThrow('cash observation')
+    const restored = parseBackup(serializeBackup(portfolio))
+    expect(restored.version).toBe(2)
+    expect(restored.portfolio).toEqual(portfolio)
+    expect(calculateOverview(restored.portfolio).assets).toBe('0')
   })
 
   it('rejects incomplete or inconsistent portfolios', () => {
@@ -282,6 +294,7 @@ describe('backup validation', () => {
             (observation) => observation.kind !== 'quantity',
           )
         }),
+        true,
       ),
     ).toThrow('needs a quantity observation')
     expect(() =>
@@ -312,6 +325,7 @@ describe('backup validation', () => {
         changed(fixture, (copy) => {
           copy.observations = copy.observations.filter((observation) => observation.kind !== 'cash')
         }),
+        true,
       ),
     ).toThrow('needs a cash observation')
     expect(() =>
@@ -321,6 +335,7 @@ describe('backup validation', () => {
             (observation) => observation.kind !== 'valuation' || observation.subjectId !== houseId,
           )
         }),
+        true,
       ),
     ).toThrow('needs a valuation observation')
     expect(() =>
@@ -397,7 +412,7 @@ describe('backup validation', () => {
 
   it('rejects unknown fields, unsupported versions, and oversized files', () => {
     const backup = createBackup(portfolioFixture())
-    expect(() => parseBackup(JSON.stringify({ ...backup, version: 2 }))).toThrow('version')
+    expect(() => parseBackup(JSON.stringify({ ...backup, version: 99 }))).toThrow('version')
     expect(() => parseBackup(JSON.stringify({ ...backup, secret: 'key' }))).toThrow('fields')
     expect(() =>
       parseBackup(JSON.stringify({ ...backup, portfolio: { ...backup.portfolio, extra: true } })),

@@ -4,6 +4,7 @@ import { usePortfolioStore } from '../application/store'
 import type { Holding } from '../domain/types'
 import { latestObservation } from '../domain/calculations'
 import { formatQuantity } from '../domain/format'
+import { localToday } from '../domain/dates'
 
 const props = defineProps<{ accountId: string; holding?: Holding }>()
 const emit = defineEmits<{ done: []; cancel: [] }>()
@@ -27,6 +28,7 @@ const quantity = ref(
     : '',
 )
 const price = ref('')
+const effectiveDate = ref(localToday())
 const error = ref('')
 const form = ref<HTMLFormElement>()
 const currency = computed(() => store.portfolio?.settings.reportingCurrency ?? '')
@@ -49,7 +51,7 @@ const selectedInstrument = computed(() =>
 )
 const existingPrice = computed(() =>
   store.portfolio && listingId.value
-    ? latestObservation(store.portfolio, 'price', listingId.value)
+    ? latestObservation(store.portfolio, 'price', listingId.value, effectiveDate.value)
     : undefined,
 )
 onMounted(() =>
@@ -70,6 +72,7 @@ async function save() {
       exchange: selectedListing.value?.exchange ?? exchange.value,
       quantity: quantity.value,
       price: price.value,
+      effectiveDate: effectiveDate.value,
     })
     emit('done')
   } catch (failure) {
@@ -173,7 +176,9 @@ async function save() {
         </div>
       </template>
       <div class="field">
-        <label for="holding-quantity">Total quantity today</label>
+        <label for="holding-quantity">
+          {{ effectiveDate === localToday() ? 'Total quantity today' : 'Total quantity on selected date' }}
+        </label>
         <input
           id="holding-quantity"
           v-model="quantity"
@@ -186,7 +191,10 @@ async function save() {
         <small id="quantity-hint">Use a decimal point, without separators.</small>
       </div>
       <div class="field">
-        <label for="holding-price">Unit price today ({{ currency }}, optional)</label>
+        <label for="holding-price">
+          {{ effectiveDate === localToday() ? 'Unit price today' : 'Unit price on selected date' }}
+          ({{ currency }}, optional)
+        </label>
         <input
           id="holding-price"
           v-model="price"
@@ -203,6 +211,19 @@ async function save() {
           }}
           Prices apply to this listing in every account.</small
         >
+      </div>
+      <div class="field">
+        <label for="holding-effective-date">Quantity and price date</label>
+        <input
+          id="holding-effective-date"
+          v-model="effectiveDate"
+          type="date"
+          required
+          :max="localToday()"
+        />
+        <small>
+          Both entered observations use this date. Leave price blank to keep the saved price.
+        </small>
       </div>
     </div>
     <p v-if="error" role="alert" class="error">{{ error }}</p>

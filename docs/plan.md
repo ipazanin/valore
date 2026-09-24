@@ -1,6 +1,6 @@
 # Valore — phased delivery plan
 
-Status: Phase 1 manual MVP implemented; awaiting the maintainer’s practical testing checkpoint. Phases 2–6 have not started.
+Status: Phase 1 manual MVP implemented; its personal-record and physical-phone checkpoint remains pending in #1. Phase 2 implementation is authorized while that checkpoint remains open. Phases 3–6 have not started.
 
 CI and static hosting: the GitHub Actions workflow verifies the production build and deploys successful `main` pushes to GitHub Pages. Publication of the manual MVP and automatic deployment are authorized; the repository uses GitHub Actions as its Pages source.
 
@@ -12,7 +12,7 @@ Build a small usable MVP, test it in practical use, and add capabilities in work
 - Let the maintainer try the workflow and use that feedback to fix problems or adjust the next slice before expanding scope.
 - Keep later features in this roadmap. Resolve their detailed rules when their phase approaches; they do not block the MVP.
 - Preserve entered records and compatible backups as the app evolves. Test migrations when storage changes.
-- Phase 1 application implementation is authorized and complete for the manual MVP. CI, publication, and automatic Pages deployment are authorized. Further product phases require separate authorization after the maintainer’s checkpoint.
+- Phase 1 application implementation is authorized and complete for the manual MVP. CI, publication, and automatic Pages deployment are authorized. Phase 2 is authorized with the Phase 1 practical checkpoint still pending; phases 3–6 require separate authorization.
 
 | Phase | Usable outcome | User test focus |
 | --- | --- | --- |
@@ -205,4 +205,4 @@ Outside this roadmap: shared ownership, financial goals, budgets, transaction ac
 
 Visual polish, detailed table interactions, additional descriptive fields, and operational maintenance choices can follow practical use; they do not justify a new round of detailed questions now.
 
-The next step is the maintainer’s Phase 1 practical test with personal records. Fix usability and data-loss issues found there before authorizing Phase 2. Later phases retain the decisions already made and only need detailed discussion when implementation reaches them.
+Phase 2 is authorized while the maintainer’s Phase 1 practical test with personal records and physical phones remains pending. Fix any usability and data-loss issues reported through that checkpoint. Later phases retain the decisions already made and only need detailed discussion when implementation reaches them.

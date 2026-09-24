@@ -92,7 +92,7 @@ test('calculates signed cash, property, debt and fractional holdings; edits surv
 
   await expectTotals(page, '182,750.75', '120,400.50', '62,350.25')
   await expect(page.getByText('Your totals are incomplete.')).toBeVisible()
-  await expect(page.getByText(/Unpriced stock \(UPRC\)/)).toBeVisible()
+  await expect(page.getByRole('region', { name: 'A little more clarity.' }).getByText(/Unpriced stock \(UPRC\)/)).toBeVisible()
   await openTab(page, 'Accounts')
   await expect(
     page
@@ -143,7 +143,7 @@ test('calculates signed cash, property, debt and fractional holdings; edits surv
   const download = await downloadPromise
   const backup = JSON.parse(await downloadText(download))
   expect(backup.format).toBe('valore')
-  expect(backup.version).toBe(1)
+  expect(backup.version).toBe(2)
   expect(backup.portfolio.settings.reportingCurrency).toBe('EUR')
   expect(backup.portfolio.accounts).toHaveLength(2)
   expect(backup.portfolio.records).toHaveLength(2)
@@ -180,13 +180,13 @@ test('backup validation and preview preserve records until replacement; restore 
     mimeType: 'application/json',
     buffer: Buffer.from(backupText),
   })
-  await expect(page.getByText('Validated backup · Version 1')).toBeVisible()
+  await expect(page.getByText('Validated backup · Version 2')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Replace portfolio' })).toBeDisabled()
   await openTab(page, 'Accounts')
   await expect(page.getByRole('heading', { name: 'Current account' })).toBeVisible()
   await openTab(page, 'Backup')
   await page.getByRole('button', { name: 'Cancel' }).click()
-  await expect(page.getByText('Validated backup · Version 1')).toHaveCount(0)
+  await expect(page.getByText('Validated backup · Version 2')).toHaveCount(0)
 
   await fileInput.setInputFiles({
     name: 'broken.json',
@@ -226,7 +226,7 @@ test('backup validation and preview preserve records until replacement; restore 
         mimeType: 'application/json',
         buffer: Buffer.from(backupText),
       })
-    await expect(onboardingPage.getByText('Validated backup · Version 1')).toBeVisible()
+    await expect(onboardingPage.getByText('Validated backup · Version 2')).toBeVisible()
     await expect(onboardingPage.getByRole('button', { name: 'Restore portfolio' })).toBeDisabled()
     await onboardingPage.getByLabel('I want to restore this portfolio.').check()
     await onboardingPage.getByRole('button', { name: 'Restore portfolio' }).click()
@@ -249,7 +249,7 @@ test('backup validation and preview preserve records until replacement; restore 
         mimeType: 'application/json',
         buffer: Buffer.from(backupText),
       })
-    await expect(otherPage.getByText('Validated backup · Version 1')).toBeVisible()
+    await expect(otherPage.getByText('Validated backup · Version 2')).toBeVisible()
     await expect(
       otherPage.getByText('This replaces every current record and the currency setting.'),
     ).toBeVisible()

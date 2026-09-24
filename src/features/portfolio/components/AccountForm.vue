@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { usePortfolioStore } from '../application/store'
 import type { Account } from '../domain/types'
 import { latestObservation } from '../domain/calculations'
+import { localToday } from '../domain/dates'
 
 const props = defineProps<{ account?: Account }>()
 const emit = defineEmits<{ done: []; cancel: [] }>()
@@ -11,9 +12,10 @@ const expectedPortfolioEpoch = store.portfolioEpoch ?? ''
 const name = ref(props.account?.name ?? '')
 const cash = ref(
   props.account && store.portfolio
-    ? (latestObservation(store.portfolio, 'cash', props.account.id)?.amount ?? '0')
+    ? (latestObservation(store.portfolio, 'cash', props.account.id)?.amount ?? '')
     : '',
 )
+const effectiveDate = ref(localToday())
 const error = ref('')
 const nameInput = ref<HTMLInputElement>()
 onMounted(() => nameInput.value?.focus())
@@ -25,6 +27,7 @@ async function save() {
       id: props.account?.id,
       name: name.value,
       cash: cash.value,
+      effectiveDate: effectiveDate.value,
     })
     emit('done')
   } catch (failure) {
@@ -40,7 +43,7 @@ async function save() {
   <form class="card editor" aria-labelledby="account-form-title" @submit.prevent="save">
     <h2 id="account-form-title">{{ account ? 'Update account' : 'Add an account' }}</h2>
     <p class="muted">
-      Enter today’s cash balance in {{ store.portfolio?.settings.reportingCurrency }}. Add
+      Enter a dated cash balance in {{ store.portfolio?.settings.reportingCurrency }}. Add
       investments to this account after saving.
     </p>
     <div class="form-grid">
@@ -72,6 +75,16 @@ async function save() {
         <small id="cash-hint"
           >Use a decimal point, without separators. A negative balance counts as a liability.</small
         >
+      </div>
+      <div class="field">
+        <label for="account-effective-date">Balance date</label>
+        <input
+          id="account-effective-date"
+          v-model="effectiveDate"
+          type="date"
+          required
+          :max="localToday()"
+        />
       </div>
     </div>
     <p v-if="error" role="alert" class="error">{{ error }}</p>

@@ -119,7 +119,7 @@ function uniqueIdentity(identity: string, known: Set<string>, location: string):
   known.add(identity)
 }
 
-export function validatePortfolio(input: unknown): Portfolio {
+export function validatePortfolio(input: unknown, requireObservations = false): Portfolio {
   const portfolio = strictObject(input, portfolioKeys, 'portfolio')
   const settings = strictObject(portfolio.settings, ['reportingCurrency', 'createdAt'], 'settings')
   const reportingCurrency = requiredString(settings.reportingCurrency, 'settings.reportingCurrency')
@@ -295,15 +295,15 @@ export function validatePortfolio(input: unknown): Portfolio {
   }
 
   for (const accountId of accountIds) {
-    if (!observedCash.has(accountId))
+    if (requireObservations && !observedCash.has(accountId))
       throw new Error(`Account ${accountId} needs a cash observation`)
   }
   for (const holdingId of holdingIds) {
-    if (!observedQuantities.has(holdingId))
+    if (requireObservations && !observedQuantities.has(holdingId))
       throw new Error(`Holding ${holdingId} needs a quantity observation`)
   }
   for (const recordId of recordIds) {
-    if (!observedValuations.has(recordId))
+    if (requireObservations && !observedValuations.has(recordId))
       throw new Error(`Record ${recordId} needs a valuation observation`)
   }
 

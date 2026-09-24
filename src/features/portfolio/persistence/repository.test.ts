@@ -137,9 +137,9 @@ it('rejects an invalid replacement without touching the saved portfolio', async 
   const original = portfolioWithAccount()
   await current.replace(original)
   const invalid = structuredClone(original)
-  invalid.observations = []
+  invalid.observations[0]!.subjectId = crypto.randomUUID()
 
-  await expect(current.replace(invalid)).rejects.toThrow(/cash observation/)
+  await expect(current.replace(invalid)).rejects.toThrow(/missing cash subject/)
   expect(await current.read()).toEqual(original)
 })
 
@@ -210,8 +210,8 @@ it('replaces only today’s observation and retains an earlier dated balance', a
   const original = await portfolioRepository.read()
   const invalidBackup = createBackup(original!)
   invalidBackup.portfolio = structuredClone(original!)
-  invalidBackup.portfolio.observations = []
-  await expect(store.restore(invalidBackup)).rejects.toThrow(/cash observation/)
+  invalidBackup.portfolio.observations[0]!.subjectId = crypto.randomUUID()
+  await expect(store.restore(invalidBackup)).rejects.toThrow(/missing cash subject/)
   expect(await portfolioRepository.read()).toEqual(original)
 
   const accountId = store.portfolio!.accounts[0]!.id

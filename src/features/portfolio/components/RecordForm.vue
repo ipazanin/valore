@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { usePortfolioStore } from '../application/store'
 import type { AssetRecord, RecordCategory } from '../domain/types'
 import { latestObservation } from '../domain/calculations'
+import { localToday } from '../domain/dates'
 import { recordCategories } from './labels'
 
 const props = defineProps<{ record?: AssetRecord }>()
@@ -16,6 +17,7 @@ const amount = ref(
     ? (latestObservation(store.portfolio, 'valuation', props.record.id)?.amount ?? '')
     : '',
 )
+const effectiveDate = ref(localToday())
 const amountLabel = computed(() =>
   category.value === 'debt' || category.value === 'lent'
     ? 'Outstanding amount'
@@ -33,6 +35,7 @@ async function save() {
       name: name.value,
       category: category.value,
       amount: amount.value,
+      effectiveDate: effectiveDate.value,
     })
     emit('done')
   } catch (failure) {
@@ -48,7 +51,7 @@ async function save() {
   <form class="card editor" aria-labelledby="record-form-title" @submit.prevent="save">
     <h2 id="record-form-title">{{ record ? 'Update record' : 'Add an asset or debt' }}</h2>
     <p class="muted">
-      Record today’s value in {{ store.portfolio?.settings.reportingCurrency }}. Keep property and
+      Record a dated value in {{ store.portfolio?.settings.reportingCurrency }}. Keep property and
       its mortgage as separate records.
     </p>
     <div class="form-grid">
@@ -95,6 +98,16 @@ async function save() {
           }}
           Use a decimal point, without separators.</small
         >
+      </div>
+      <div class="field">
+        <label for="record-effective-date">Value date</label>
+        <input
+          id="record-effective-date"
+          v-model="effectiveDate"
+          type="date"
+          required
+          :max="localToday()"
+        />
       </div>
     </div>
     <p v-if="error" role="alert" class="error">{{ error }}</p>

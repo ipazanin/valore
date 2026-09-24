@@ -3,7 +3,11 @@ import { defineStore } from 'pinia'
 import { parseBackup, serializeBackup, type Backup } from '../../backup/backup'
 import { calculateOverview } from '../domain/calculations'
 import { normalizeAmount } from '../domain/decimal'
-import { localToday } from '../domain/dates'
+import {
+  correctObservation,
+  deleteObservation as removeObservation,
+  recordObservation,
+} from '../domain/observations'
 import { createEmptyPortfolio } from '../domain/portfolio'
 import type {
   Instrument,
@@ -17,6 +21,7 @@ import { portfolioRepository } from '../persistence/repository'
 interface AccountDraft {
   id?: string
   expectedPortfolioEpoch: string
+  effectiveDate?: string
   name: string
   cash: string
 }
@@ -24,6 +29,7 @@ interface AccountDraft {
 interface RecordDraft {
   id?: string
   expectedPortfolioEpoch: string
+  effectiveDate?: string
   name: string
   category: RecordCategory
   amount: string
@@ -32,6 +38,7 @@ interface RecordDraft {
 interface HoldingDraft {
   id?: string
   expectedPortfolioEpoch: string
+  effectiveDate?: string
   accountId: string
   listingId?: string
   name: string
@@ -41,6 +48,15 @@ interface HoldingDraft {
   exchange: string
   quantity: string
   price: string
+}
+
+interface ObservationDraft {
+  id?: string
+  expectedPortfolioEpoch: string
+  kind: ObservationKind
+  subjectId: string
+  effectiveDate: string
+  amount: string
 }
 
 function requiredName(input: string, description: string): string {
@@ -61,35 +77,6 @@ function requirePortfolio(current: Portfolio | null): Portfolio {
 function requireExpectedEpoch(epoch: string): void {
   if (!epoch) {
     throw new Error('Reopen the form to save against the current portfolio.')
-  }
-}
-
-function recordObservation(
-  portfolio: Portfolio,
-  kind: ObservationKind,
-  subjectId: string,
-  amount: string,
-): void {
-  const now = new Date()
-  const effectiveDate = localToday(now)
-  const existing = portfolio.observations.find(
-    (observation) =>
-      observation.kind === kind &&
-      observation.subjectId === subjectId &&
-      observation.effectiveDate === effectiveDate,
-  )
-  if (existing) {
-    existing.amount = amount
-    existing.recordedAt = now.toISOString()
-  } else {
-    portfolio.observations.push({
-      id: crypto.randomUUID(),
-      kind,
-      subjectId,
-      effectiveDate,
-      amount,
-      recordedAt: now.toISOString(),
-    })
   }
 }
 
@@ -280,7 +267,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         }
         account.name = name
         account.updatedAt = now
-        recordObservation(snapshot, 'cash', account.id, cash)
+        recordObservation(snapshot, 'cash', account.id, cash, draft.effectiveDate)
       } else {
         const id = crypto.randomUUID()
         snapshot.accounts.push({
@@ -290,7 +277,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
           createdAt: now,
           updatedAt: now,
         })
-        recordObservation(snapshot, 'cash', id, cash)
+        recordObservation(snapshot, 'cash', id, cash, draft.effectiveDate)
       }
       return snapshot
     }, draft.expectedPortfolioEpoch)
@@ -313,7 +300,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         }
         record.name = name
         record.updatedAt = now
-        recordObservation(snapshot, 'valuation', record.id, amount)
+        recordObservation(snapshot, 'valuation', record.id, amount, draft.effectiveDate)
       } else {
         const id = crypto.randomUUID()
         snapshot.records.push({
@@ -324,7 +311,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
           createdAt: now,
           updatedAt: now,
         })
-        recordObservation(snapshot, 'valuation', id, amount)
+        recordObservation(snapshot, 'valuation', id, amount, draft.effectiveDate)
       }
       return snapshot
     }, draft.expectedPortfolioEpoch)
@@ -385,12 +372,41 @@ export const usePortfolioStore = defineStore('portfolio', () => {
           updatedAt: now,
         })
       }
-      recordObservation(snapshot, 'quantity', holdingId, quantity)
+      recordObservation(snapshot, 'quantity', holdingId, quantity, draft.effectiveDate)
       if (price !== null) {
-        recordObservation(snapshot, 'price', listing.id, price)
+        recordObservation(snapshot, 'price', listing.id, price, draft.effectiveDate)
       }
       return snapshot
     }, draft.expectedPortfolioEpoch)
+  }
+
+  async function saveObservation(draft: ObservationDraft): Promise<void> {
+    await save((current) => {
+      requireExpectedEpoch(draft.expectedPortfolioEpoch)
+      const snapshot = requirePortfolio(current)
+      if (draft.id) {
+        const observation = snapshot.observations.find((candidate) => candidate.id === draft.id)
+        if (!observation) {
+          throw new Error('This observation no longer exists.')
+        }
+        if (observation.kind !== draft.kind || observation.subjectId !== draft.subjectId) {
+          throw new Error('An observation’s kind and subject cannot be changed.')
+        }
+        correctObservation(snapshot, draft.id, draft.effectiveDate, draft.amount)
+      } else {
+        recordObservation(snapshot, draft.kind, draft.subjectId, draft.amount, draft.effectiveDate)
+      }
+      return snapshot
+    }, draft.expectedPortfolioEpoch)
+  }
+
+  async function deleteObservation(id: string, expectedPortfolioEpoch: string): Promise<void> {
+    await save((current) => {
+      requireExpectedEpoch(expectedPortfolioEpoch)
+      const snapshot = requirePortfolio(current)
+      removeObservation(snapshot, id)
+      return snapshot
+    }, expectedPortfolioEpoch)
   }
 
   async function restore(backup: Backup): Promise<void> {
@@ -425,6 +441,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     saveAccount,
     saveRecord,
     saveHolding,
+    saveObservation,
+    deleteObservation,
     restore,
     exportJson,
   }

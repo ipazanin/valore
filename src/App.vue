@@ -6,9 +6,10 @@ import OverviewPanel from './features/portfolio/components/OverviewPanel.vue'
 import AccountsPanel from './features/portfolio/components/AccountsPanel.vue'
 import RecordsPanel from './features/portfolio/components/RecordsPanel.vue'
 import BackupPanel from './features/backup/BackupPanel.vue'
+import HistoryPanel from './features/portfolio/components/HistoryPanel.vue'
 
 const store = usePortfolioStore()
-type Tab = 'overview' | 'accounts' | 'records' | 'backup'
+type Tab = 'overview' | 'accounts' | 'records' | 'history' | 'backup'
 const tab = ref<Tab>('overview')
 const restoreGeneration = ref(0)
 const openingError = ref<string | null>(null)
@@ -16,6 +17,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'accounts', label: 'Accounts' },
   { id: 'records', label: 'Assets & debts' },
+  { id: 'history', label: 'History' },
   { id: 'backup', label: 'Backup' },
 ]
 async function openPortfolio() {
@@ -72,6 +74,7 @@ function restored() {
         <OverviewPanel v-show="tab === 'overview'" @navigate="tab = $event" />
         <AccountsPanel v-show="tab === 'accounts'" :key="`accounts-${restoreGeneration}`" />
         <RecordsPanel v-show="tab === 'records'" :key="`records-${restoreGeneration}`" />
+        <HistoryPanel v-show="tab === 'history'" :key="`history-${restoreGeneration}`" />
         <BackupPanel v-show="tab === 'backup'" @restored="restored" />
       </template>
     </main>
@@ -144,6 +147,7 @@ function restored() {
 .navigation {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.45rem;
   border-bottom: 1px solid var(--line);
   padding: 1.05rem 0;

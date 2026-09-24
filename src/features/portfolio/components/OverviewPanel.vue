@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { usePortfolioStore } from '../application/store'
 import { formatMoney } from '../domain/format'
+import { latestObservation } from '../domain/calculations'
 import { localToday } from '../domain/dates'
 import { categoryLabels, displayDate } from './labels'
 
@@ -14,6 +15,28 @@ const hasRecords = computed(() =>
 const assetCategories = computed(() =>
   Object.entries(store.overview?.categories ?? {}).filter(([category]) => category !== 'debt'),
 )
+const unobserved = computed(() => {
+  const portfolio = store.portfolio
+  if (!portfolio) return []
+  return [
+    ...portfolio.accounts
+      .filter((account) => !latestObservation(portfolio, 'cash', account.id))
+      .map((account) => ({ id: account.id, name: `${account.name} cash` })),
+    ...portfolio.records
+      .filter((record) => !latestObservation(portfolio, 'valuation', record.id))
+      .map((record) => ({ id: record.id, name: record.name })),
+    ...portfolio.holdings
+      .filter((holding) => !latestObservation(portfolio, 'quantity', holding.id))
+      .map((holding) => {
+        const listing = portfolio.listings.find((listing) => listing.id === holding.listingId)!
+        const instrument = portfolio.instruments.find(
+          (instrument) => instrument.id === listing.instrumentId,
+        )!
+        const account = portfolio.accounts.find((account) => account.id === holding.accountId)!
+        return { id: holding.id, name: `${instrument.name} in ${account.name}` }
+      }),
+  ]
+})
 const unvalued = computed(() =>
   (store.overview?.unvaluedHoldings ?? []).map((holdingId) => {
     const holding = store.portfolio!.holdings.find((holding) => holding.id === holdingId)!
@@ -67,6 +90,12 @@ const unvalued = computed(() =>
         }}</strong>
         <small>Outstanding debts and negative cash</small>
       </article>
+    </div>
+    <div v-if="unobserved.length" class="notice">
+      These records have no observation and are excluded from recorded totals:
+      <ul>
+        <li v-for="record in unobserved" :key="record.id">{{ record.name }}</li>
+      </ul>
     </div>
     <div v-if="unvalued.length" class="notice warning" role="status">
       <strong>Your totals are incomplete.</strong> Add a unit price to value these holdings:

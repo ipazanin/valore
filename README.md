@@ -1,6 +1,6 @@
 # Valore
 
-A local portfolio and net-worth tracker. Phase 1 is implemented and ready for practical testing: one reporting currency, manual records and prices, current totals, and JSON backups. Later phases remain deferred in the [delivery plan](docs/plan.md).
+A local portfolio and net-worth tracker. Phase 1 is implemented and ready for practical testing: one reporting currency, manual records and prices, current totals, and JSON backups. Phase 2 adds dated entry and history corrections; subsequent capabilities are tracked in the [delivery plan](docs/plan.md).
 
 ## Run locally
 
@@ -29,7 +29,7 @@ npm run test:e2e
 
 The browser suite covers desktop Chromium and Firefox plus phone-sized Chromium and WebKit. Emulation does not replace testing on physical Android and iPhone devices. Unit persistence tests use real Dexie transactions with fake-indexeddb; browser tests exercise browser IndexedDB.
 
-## Phase 1 behavior
+## Portfolio behavior
 
 - Accounts group cash and stock/ETF holdings. Holdings preserve instrument name, type, optional ISIN, listing symbol, exchange, and trading currency. Choose a saved listing to hold it in another account; its manual price applies to both.
 - Property, vehicles/possessions, Other assets, money lent, and debts are separate named records. Use current resale estimates for tangible assets and outstanding amounts for money lent or owed. Record a property and its mortgage separately.
@@ -37,8 +37,8 @@ The browser suite covers desktop Chromium and Firefox plus phone-sized Chromium 
 - Net worth is assets minus liabilities. Account totals are only grouping. Negative cash remains signed in the account and contributes its absolute amount once to liabilities.
 - Investment value is total quantity multiplied by unit price. A positive holding with no price makes known totals incomplete; it is never assigned a zero price. Blank price updates retain any saved price. An explicitly entered zero price is valid.
 - Amounts use decimal strings and decimal.js arithmetic, with up to 18 whole digits and 12 decimal places. Enter a decimal point without thousands separators. Totals display currency precision; calculations and backups retain full precision. Unit prices and quantities display their entered precision.
-- Saves use today’s local calendar date, separately from the UTC edit timestamp. A second save on the same day corrects that day’s observation. Previous dates remain stored and exported. Latest observations carry forward; backdating and history screens are deferred.
-- Update names, balances, quantities, prices, estimates, and outstanding amounts. Investment identity and existing record categories remain fixed. To record a zero holding or repaid debt, update its quantity or amount to zero. Deletion and archival are deferred.
+- Saves default to today’s local calendar date and accept past dates, separately from the UTC edit timestamp. A second save on the same date corrects that observation. History allows independent cash, quantity, price, and valuation corrections and confirmed deletion. Moving an entry onto an occupied date is rejected. Values carry forward only from their first observation; later quantities and prices never change earlier ownership or values.
+- Update names, balances, quantities, prices, estimates, and outstanding amounts. Investment identity and existing record categories remain fixed. To record a zero holding or repaid debt, update its quantity or amount to zero. Deleting every observation keeps the named record, which then has no recorded value and is excluded from totals. Price deletion may leave positive holdings unvalued. Archival is deferred.
 
 ## Storage and backups
 
@@ -50,7 +50,7 @@ Local records are unencrypted. Clearing site data, using private browsing, brows
 
 **Export backups regularly**, especially before replacing a portfolio or clearing browser storage. JSON backups are unencrypted and contain all supported records, instruments/listings, dated observations, and the reporting-currency setting. Keep them private and outside version control; `backups/` and `local-data/` are ignored.
 
-Backup format version 1 uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, references, and required observations before replacement. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
+Backup format version 2 supports records with no observations after history deletion and still imports valid version 1 backups. It uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, and references before replacement. Version 1 retains its original required-observation checks. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
 
 ## Static hosting
 
