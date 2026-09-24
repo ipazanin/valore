@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+/backups/
+/local-data/
