@@ -7,6 +7,7 @@ import { formatQuantity } from '../domain/format'
 import type { Observation, ObservationKind } from '../domain/types'
 import { displayDate, recordCategories } from './labels'
 import ObservationForm from './ObservationForm.vue'
+import HistoryChartPanel from './HistoryChartPanel.vue'
 
 interface HistorySubject {
   key: string
@@ -206,6 +207,7 @@ async function deleteObservation() {
         </p>
       </div>
     </div>
+    <HistoryChartPanel v-if="store.portfolio" :portfolio="store.portfolio" :currency="currency" />
     <div v-if="!subjects.length" class="empty">
       <h2>No records yet</h2>
       <p>Add an account, investment holding, asset, or debt to begin its history.</p>
