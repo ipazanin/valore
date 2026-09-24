@@ -1,5 +1,8 @@
 # Project instructions
 
+- Read the [shared workflow](.agents/workflow.md) and [secrets and portfolio privacy rules](.agents/rules/secrets.md) before work.
+- Use the [github skill](.agents/skills/github/SKILL.md) for GitHub tasks. Use [implement-issue](.agents/skills/implement-issue/SKILL.md) only when the user explicitly requests issue implementation.
+- Deliver issues directly on `main`, include the issue ID in commit subjects, and have the agent mark completed work Done under the shared workflow's authorization and completion rules.
 - Read README.md and docs/plan.md before changing product behavior.
 - Work on the requested phase in small, runnable increments. Let the maintainer test each increment before expanding scope.
 - Keep future-phase details deferred until they affect the current work.
