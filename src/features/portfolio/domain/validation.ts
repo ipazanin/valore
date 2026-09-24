@@ -127,14 +127,23 @@ function uniqueIdentity(identity: string, known: Set<string>, location: string):
 
 export function validatePortfolio(
   input: unknown,
-  settings: { requireObservations?: boolean; allowClosures?: boolean } = {},
+  settings: { requireObservations?: boolean; allowClosures?: boolean; allowTheme?: boolean } = {},
 ): Portfolio {
-  const { requireObservations = false, allowClosures = true } = settings
+  const { requireObservations = false, allowClosures = true, allowTheme = true } = settings
   const closureKeys = allowClosures ? ['closedOn'] : []
   const portfolio = strictObject(input, portfolioKeys, 'portfolio')
   const portfolioSettings = strictObject(
     portfolio.settings, ['reportingCurrency', 'createdAt'], 'settings',
+    allowTheme ? ['theme'] : [],
   )
+  if (
+    Object.hasOwn(portfolioSettings, 'theme') &&
+    portfolioSettings.theme !== 'system' &&
+    portfolioSettings.theme !== 'light' &&
+    portfolioSettings.theme !== 'dark'
+  ) {
+    throw new Error('settings.theme must be system, light, or dark')
+  }
   const reportingCurrency = requiredString(
     portfolioSettings.reportingCurrency, 'settings.reportingCurrency',
   )

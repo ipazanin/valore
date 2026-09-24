@@ -105,7 +105,7 @@ async function exportFile() {
         <h2>Export your portfolio</h2>
         <p class="muted">
           Download all accounts, investments, assets, debts, dated observations, and your currency
-          setting in one versioned JSON file.
+          and appearance settings in one versioned JSON file.
         </p>
         <small>The file is unencrypted. Store it somewhere private.</small>
       </div>
@@ -140,6 +140,14 @@ async function exportFile() {
             <dd>{{ backup.portfolio.settings.reportingCurrency }}</dd>
           </div>
           <div>
+            <dt>Appearance</dt>
+            <dd>{{
+              { system: 'Follow system', light: 'Light', dark: 'Dark' }[
+                backup.portfolio.settings.theme ?? 'system'
+              ]
+            }}</dd>
+          </div>
+          <div>
             <dt>Accounts</dt>
             <dd>{{ backup.portfolio.accounts.length }}</dd>
           </div>
@@ -172,8 +180,8 @@ async function exportFile() {
         <p class="notice warning">
           {{
             store.portfolio
-              ? 'This replaces every current record and the currency setting. Export your current portfolio first if you want to keep it.'
-              : 'This restores the complete portfolio and its saved currency setting.'
+              ? 'This replaces every current record and the currency and appearance settings. Export your current portfolio first if you want to keep it.'
+              : 'This restores the complete portfolio and its currency and appearance settings.'
           }}
         </p>
         <label class="confirmation"
@@ -262,7 +270,7 @@ input[type='file'] {
 }
 input::file-selector-button {
   padding: 0.5rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   border-radius: 5px;
   background: var(--tint);
   margin-right: 0.5rem;

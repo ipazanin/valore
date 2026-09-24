@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
+import { resolvedTheme } from '../../appearance/theme'
 import type { HistoryPoint } from '../domain/history'
 import { displayDate } from './labels'
 import {
@@ -24,25 +25,31 @@ let chart: Chart<'line'> | null = null
 
 const seriesStyles: Record<HistorySeries, {
   label: string
-  color: string
+  colorToken: string
   dash: number[]
   pointStyle: 'circle' | 'triangle' | 'rectRot'
 }> = {
-  netWorth: { label: 'Net worth', color: '#145744', dash: [], pointStyle: 'circle' },
-  assets: { label: 'Assets', color: '#4067a0', dash: [7, 4], pointStyle: 'triangle' },
-  liabilities: { label: 'Liabilities', color: '#a33635', dash: [2, 4], pointStyle: 'rectRot' },
+  netWorth: { label: 'Net worth', colorToken: '--chart-net-worth', dash: [], pointStyle: 'circle' },
+  assets: { label: 'Assets', colorToken: '--chart-assets', dash: [7, 4], pointStyle: 'triangle' },
+  liabilities: {
+    label: 'Liabilities',
+    colorToken: '--chart-liabilities',
+    dash: [2, 4],
+    pointStyle: 'rectRot',
+  },
 }
 
-function datasets() {
+function datasets(styles: CSSStyleDeclaration) {
   return (Object.keys(seriesStyles) as HistorySeries[])
     .filter((series) => visible.value[series])
     .map((series) => {
       const style = seriesStyles[series]
+      const color = styles.getPropertyValue(style.colorToken).trim()
       return {
         label: style.label,
         data: canvasHistorySeries(props.points, series),
-        borderColor: style.color,
-        backgroundColor: style.color,
+        borderColor: color,
+        backgroundColor: color,
         borderDash: style.dash,
         pointStyle: style.pointStyle,
         pointRadius: (context: { raw: unknown }) =>
@@ -59,9 +66,13 @@ function datasets() {
 
 function createChart() {
   if (!canvas.value || !anyVisible.value) return
+  const styles = getComputedStyle(canvas.value)
+  const textColor = styles.getPropertyValue('--muted').trim()
+  const lineColor = styles.getPropertyValue('--line').trim()
+  const axisColor = styles.getPropertyValue('--chart-axis').trim()
   chart = new Chart(canvas.value, {
     type: 'line',
-    data: { datasets: datasets() },
+    data: { datasets: datasets(styles) },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -71,6 +82,11 @@ function createChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: styles.getPropertyValue('--surface').trim(),
+          titleColor: styles.getPropertyValue('--ink').trim(),
+          bodyColor: styles.getPropertyValue('--ink').trim(),
+          borderColor: lineColor,
+          borderWidth: 1,
           filter: (context) => {
             const point = context.raw as CanvasHistoryPoint
             return !point.synthetic && point.exact !== null
@@ -92,12 +108,18 @@ function createChart() {
           type: 'time',
           adapters: { date: { zone: 'utc' } },
           time: { minUnit: 'day' },
-          title: { display: true, text: 'Date' },
+          grid: { color: lineColor },
+          border: { color: axisColor },
+          ticks: { color: textColor },
+          title: { display: true, text: 'Date', color: textColor },
         },
         y: {
           type: 'linear',
-          title: { display: true, text: props.currency },
+          grid: { color: lineColor },
+          border: { color: axisColor },
+          title: { display: true, text: props.currency, color: textColor },
           ticks: {
+            color: textColor,
             callback: (tickValue) =>
               `${props.currency} ${new Intl.NumberFormat('en', {
                 notation: 'compact',
@@ -123,6 +145,7 @@ watch(
     visible.value.netWorth,
     visible.value.assets,
     visible.value.liabilities,
+    resolvedTheme.value,
   ],
   () => {
     if (!anyVisible.value) {
@@ -130,13 +153,9 @@ watch(
       chart = null
       return
     }
-    if (!chart) {
-      createChart()
-      return
-    }
-    chart.data.datasets = datasets()
-    chart.options.scales!.y!.title!.text = props.currency
-    chart.update('none')
+    chart?.destroy()
+    chart = null
+    createChart()
   },
   { flush: 'post' },
 )
@@ -193,14 +212,14 @@ watch(
   border-top: 3px solid;
 }
 .series-mark.netWorth {
-  border-color: #145744;
+  border-color: var(--chart-net-worth);
 }
 .series-mark.assets {
-  border-color: #4067a0;
+  border-color: var(--chart-assets);
   border-top-style: dashed;
 }
 .series-mark.liabilities {
-  border-color: #a33635;
+  border-color: var(--chart-liabilities);
   border-top-style: dotted;
 }
 .canvas-wrap {

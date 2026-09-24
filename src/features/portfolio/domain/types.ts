@@ -1,4 +1,5 @@
 export type Currency = string
+export type ThemePreference = 'system' | 'light' | 'dark'
 
 export type RecordCategory = 'property' | 'possessions' | 'other' | 'lent' | 'debt'
 export type ObservationKind = 'cash' | 'quantity' | 'price' | 'valuation'
@@ -60,7 +61,7 @@ export interface Observation {
 }
 
 export interface Portfolio {
-  settings: { reportingCurrency: Currency; createdAt: string }
+  settings: { reportingCurrency: Currency; createdAt: string; theme?: ThemePreference }
   accounts: Account[]
   instruments: Instrument[]
   listings: Listing[]

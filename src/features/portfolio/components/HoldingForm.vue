@@ -240,7 +240,7 @@ async function save() {
 
 <style scoped>
 .identity {
-  background: white;
+  background: var(--surface);
   margin: 0;
 }
 .error {

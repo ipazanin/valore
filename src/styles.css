@@ -6,8 +6,9 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #223c33;
-  background: #f6f7f3;
+  color: var(--ink);
+  background: var(--canvas);
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -22,7 +23,71 @@
   --warning: #805119;
   --warning-bg: #fff4df;
   --danger: #a33635;
+  --danger-hover: #8b2d2c;
   --radius: 16px;
+  --danger-bg: #fff0ed;
+  --field-border: #7d8f7f;
+  --control-border: #7d8f7f;
+  --chart-axis: #7d8f7f;
+  --editor-bg: #f0f5ee;
+  --editor-line: #cbdaca;
+  --empty-bg: #fafbf8;
+  --empty-line: #cbd6cb;
+  --focus: #bd7b23;
+  --on-brand: #fff;
+  --on-brand-muted: #d4e7db;
+  --status-dot: #5e886d;
+  --logo-ink: #dbea9d;
+  --wordmark-dot: #78a180;
+  --nav-active-bg: #e6eee3;
+  --chart-cash: #23735a;
+  --chart-investments: #3b6eaa;
+  --chart-property: #946838;
+  --chart-possessions: #906095;
+  --chart-other: #687b40;
+  --chart-lent: #b35743;
+  --chart-net-worth: #145744;
+  --chart-assets: #4067a0;
+  --chart-liabilities: #a33635;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: #202d27;
+  --canvas: #111c18;
+  --ink: #eff5f0;
+  --muted: #bbcbc0;
+  --brand: #91d6aa;
+  --brand-hover: #a9e7bd;
+  --line: #607d68;
+  --tint: #2d4537;
+  --warning: #ffd698;
+  --warning-bg: #49371f;
+  --danger: #ffaaa6;
+  --danger-hover: #ffc0bc;
+  --danger-bg: #4a2c2a;
+  --field-border: #809a88;
+  --control-border: #809a88;
+  --chart-axis: #809a88;
+  --editor-bg: #263d30;
+  --editor-line: #607d68;
+  --empty-bg: #1b2a21;
+  --empty-line: #607d68;
+  --focus: #ffd17d;
+  --on-brand: #10291c;
+  --on-brand-muted: #244b35;
+  --status-dot: #91d6aa;
+  --logo-ink: #10291c;
+  --wordmark-dot: #91d6aa;
+  --nav-active-bg: #345743;
+  --chart-cash: #84ddb4;
+  --chart-investments: #a6c9ff;
+  --chart-property: #dfb57e;
+  --chart-possessions: #d4a6dc;
+  --chart-other: #bed68f;
+  --chart-lent: #f3a58f;
+  --chart-net-worth: #91d6aa;
+  --chart-assets: #a6c9ff;
+  --chart-liabilities: #ffaaa6;
 }
 * {
   box-sizing: border-box;
@@ -59,15 +124,15 @@ button {
   border-radius: 9px;
   padding: 0.68rem 1rem;
   background: var(--brand);
-  color: white;
+  color: var(--on-brand);
   font-weight: 600;
 }
 button:hover:not(:disabled) {
   background: var(--brand-hover);
 }
 button.secondary {
-  background: white;
-  border-color: var(--line);
+  background: var(--surface);
+  border-color: var(--control-border);
   color: var(--ink);
 }
 button.secondary:hover:not(:disabled) {
@@ -84,12 +149,15 @@ button.quiet:hover:not(:disabled) {
 button.danger {
   background: var(--danger);
 }
+button.danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+}
 a {
   color: var(--brand);
   text-underline-offset: 3px;
 }
 :focus-visible {
-  outline: 3px solid #bd7b23;
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
 h1,
@@ -166,8 +234,8 @@ small {
 .empty {
   padding: 2.5rem 1.5rem;
   text-align: center;
-  background: #fafbf8;
-  border: 1px dashed #cbd6cb;
+  background: var(--empty-bg);
+  border: 1px dashed var(--empty-line);
   border-radius: var(--radius);
 }
 .empty p {
@@ -187,7 +255,7 @@ small {
   color: var(--warning);
 }
 .error {
-  background: #fff0ed;
+  background: var(--danger-bg);
   color: var(--danger);
   padding: 0.85rem 1rem;
   border-radius: 8px;
@@ -225,9 +293,9 @@ small {
 .field select {
   width: 100%;
   padding: 0.7rem 0.8rem;
-  border: 1px solid #b9c7bd;
+  border: 1px solid var(--field-border);
   border-radius: 8px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
 }
 .field input:disabled,
@@ -239,8 +307,8 @@ small {
   grid-column: 1 / -1;
 }
 .editor {
-  background: #f0f5ee;
-  border-color: #cbdaca;
+  background: var(--editor-bg);
+  border-color: var(--editor-line);
 }
 .editor p {
   font-size: 0.9rem;

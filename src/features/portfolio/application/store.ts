@@ -16,6 +16,7 @@ import type {
   ObservationKind,
   Portfolio,
   RecordCategory,
+  ThemePreference,
 } from '../domain/types'
 import { portfolioRepository } from '../persistence/repository'
 
@@ -182,34 +183,52 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   const overview = computed(() => (portfolio.value ? calculateOverview(portfolio.value) : null))
   let loaded = false
   let pendingSaves = 0
+  let disposed = false
+  let observationGeneration = 0
   let unsubscribe: (() => void) | null = null
   onScopeDispose(() => {
+    disposed = true
+    loaded = false
+    stopObserving()
+  })
+
+  function stopObserving(): void {
+    observationGeneration += 1
     unsubscribe?.()
     unsubscribe = null
-  })
+  }
+
+  function observeLatestState(): void {
+    stopObserving()
+    if (disposed) return
+    const generation = observationGeneration
+    const subscription = portfolioRepository.observeState().subscribe({
+      next: (snapshot) => {
+        if (disposed || generation !== observationGeneration) return
+        portfolio.value = snapshot.portfolio
+        portfolioEpoch.value = snapshot.epoch
+      },
+      error: (cause: unknown) => {
+        if (disposed || generation !== observationGeneration) return
+        loaded = false
+        error.value = messageFor(cause)
+      },
+    })
+    unsubscribe = () => subscription.unsubscribe()
+  }
 
   async function load(): Promise<void> {
     loading.value = true
     loaded = false
-    unsubscribe?.()
-    unsubscribe = null
+    stopObserving()
     try {
       const snapshot = await portfolioRepository.readState()
+      if (disposed) return
       portfolio.value = snapshot.portfolio
       portfolioEpoch.value = snapshot.epoch
       error.value = null
       loaded = true
-      const subscription = portfolioRepository.observeState().subscribe({
-        next: (snapshot) => {
-          portfolio.value = snapshot.portfolio
-          portfolioEpoch.value = snapshot.epoch
-        },
-        error: (cause: unknown) => {
-          loaded = false
-          error.value = messageFor(cause)
-        },
-      })
-      unsubscribe = () => subscription.unsubscribe()
+      observeLatestState()
     } catch (cause) {
       portfolio.value = null
       portfolioEpoch.value = null
@@ -236,6 +255,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       const snapshot = await portfolioRepository.updateState(change, expectedEpoch, replace)
       portfolio.value = snapshot.portfolio
       portfolioEpoch.value = snapshot.epoch
+      observeLatestState()
     } catch (cause) {
       error.value = messageFor(cause)
       throw cause
@@ -444,6 +464,16 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  async function saveTheme(theme: ThemePreference): Promise<void> {
+    const expectedPortfolioEpoch = portfolioEpoch.value
+    await save((current) => {
+      requireExpectedEpoch(expectedPortfolioEpoch ?? '')
+      const snapshot = requirePortfolio(current)
+      snapshot.settings.theme = theme
+      return snapshot
+    }, expectedPortfolioEpoch)
+  }
+
   return {
     portfolio,
     portfolioEpoch,
@@ -459,6 +489,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     saveObservation,
     deleteObservation,
     saveClosure,
+    saveTheme,
     restore,
     exportJson,
   }

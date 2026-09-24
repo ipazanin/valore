@@ -49,7 +49,7 @@ it('preserves history and closures across database reopen and backup restore', a
   expect(calculateOverview(saved, '2020-01-31').assets).toBe('120')
   expect(calculateOverview(saved, '2020-02-01').accounts).toEqual([])
   const backup = parseBackup(await store.exportJson())
-  expect(backup.version).toBe(3)
+  expect(backup.version).toBe(4)
   await store.restore(backup)
   store.$dispose()
   portfolioRepository.close()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { usePortfolioStore } from './features/portfolio/application/store'
 import OnboardingPanel from './features/portfolio/components/OnboardingPanel.vue'
 import OverviewPanel from './features/portfolio/components/OverviewPanel.vue'
@@ -8,8 +8,11 @@ import RecordsPanel from './features/portfolio/components/RecordsPanel.vue'
 import BackupPanel from './features/backup/BackupPanel.vue'
 import HistoryPanel from './features/portfolio/components/HistoryPanel.vue'
 import OfflineStatus from './features/offline/OfflineStatus.vue'
+import ThemeControl from './features/appearance/ThemeControl.vue'
+import { applyTheme } from './features/appearance/theme'
 
 const store = usePortfolioStore()
+applyTheme(computed(() => store.portfolio?.settings.theme))
 type Tab = 'overview' | 'accounts' | 'records' | 'history' | 'backup'
 const tab = ref<Tab>('overview')
 const restoreGeneration = ref(0)
@@ -58,6 +61,7 @@ function restored() {
         {{ section.label }}</button
       ><span class="currency">{{ store.portfolio.settings.reportingCurrency }}</span>
     </nav>
+    <div v-if="store.portfolio" class="appearance-row"><ThemeControl /></div>
     <main id="main" tabindex="-1">
       <div v-if="store.loading" class="empty" role="status">Opening your portfolio…</div>
       <div v-else-if="openingError && !store.portfolio" class="card">
@@ -89,7 +93,7 @@ function restored() {
 
 <style scoped>
 .site-header {
-  background: white;
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
 }
 .header-inner {
@@ -115,7 +119,7 @@ function restored() {
   place-items: center;
   background: var(--brand);
   border-radius: 11px;
-  color: #dbea9d;
+  color: var(--logo-ink);
   font:
     italic 600 1.9rem Georgia,
     serif;
@@ -125,7 +129,7 @@ function restored() {
   padding-bottom: 0.25rem;
 }
 .wordmark-dot {
-  color: #78a180;
+  color: var(--wordmark-dot);
 }
 .header-note {
   color: var(--muted);
@@ -161,7 +165,7 @@ function restored() {
   font-weight: 550;
 }
 .navigation button.active {
-  background: #e6eee3;
+  background: var(--nav-active-bg);
   color: var(--brand);
 }
 .navigation button:hover {
@@ -173,6 +177,11 @@ function restored() {
   font-size: 0.75rem;
   color: var(--muted);
   font-weight: 650;
+}
+.appearance-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
 }
 main {
   padding-block: 2.5rem 3rem;
@@ -196,7 +205,7 @@ footer {
   left: 1rem;
   top: -100px;
   z-index: 10;
-  background: white;
+  background: var(--surface);
   padding: 1rem;
 }
 .skip-link:focus {

@@ -96,6 +96,8 @@ Dated observation editing, confirmed deletion, dated archival, and all three cha
 
 ### 2B. PWA, mobile, and themes
 
+Offline caching, installation metadata, updates that wait for open windows to close, and saved light/dark/system appearance are implemented. Backups include the appearance preference. Automated browser checks cover Firefox and phone-sized Chromium/WebKit; physical Android/iPhone installation and backup handling remain a maintainer checkpoint.
+
 - Support offline launch, viewing, editing, calculations, and available backup flows after a successful initial load and cache.
 - Add installation metadata and platform-appropriate installation guidance. Keep the app usable in a normal browser tab.
 - Support light, dark, and follow-system modes, initially following the device setting and saving the selection locally. Apply themes to forms and charts.

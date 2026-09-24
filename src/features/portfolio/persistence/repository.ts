@@ -125,7 +125,11 @@ export class PortfolioRepository {
     }
 
     const portfolio: Portfolio = {
-      settings: { reportingCurrency: settings.reportingCurrency, createdAt: settings.createdAt },
+      settings: {
+        reportingCurrency: settings.reportingCurrency,
+        createdAt: settings.createdAt,
+        ...(Object.hasOwn(settings, 'theme') ? { theme: settings.theme } : {}),
+      },
       accounts,
       instruments,
       listings,

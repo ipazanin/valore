@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip } from 'chart.js'
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { resolvedTheme } from '../../appearance/theme'
 import { MoneyDecimal } from '../domain/decimal'
 import { formatMoney } from '../domain/format'
 import type { Overview } from '../domain/types'
@@ -31,6 +32,7 @@ function renderChart(): void {
   const liabilityColor = styles.getPropertyValue('--danger').trim()
   const textColor = styles.getPropertyValue('--muted').trim()
   const lineColor = styles.getPropertyValue('--line').trim()
+  const axisColor = styles.getPropertyValue('--chart-axis').trim()
   chart = new Chart(canvas.value, {
     type: 'bar',
     data: {
@@ -57,7 +59,7 @@ function renderChart(): void {
           beginAtZero: true,
           min: 0,
           grid: { color: lineColor },
-          border: { color: lineColor },
+          border: { color: axisColor },
           title: {
             display: true,
             text: props.currency,
@@ -80,6 +82,11 @@ function renderChart(): void {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: styles.getPropertyValue('--surface').trim(),
+          titleColor: styles.getPropertyValue('--ink').trim(),
+          bodyColor: styles.getPropertyValue('--ink').trim(),
+          borderColor: lineColor,
+          borderWidth: 1,
           titleFont: { family: styles.fontFamily },
           bodyFont: { family: styles.fontFamily },
           callbacks: {
@@ -92,7 +99,7 @@ function renderChart(): void {
   })
 }
 
-watch([balances, canvas, () => props.currency], renderChart, { flush: 'post' })
+watch([balances, canvas, () => props.currency, resolvedTheme], renderChart, { flush: 'post' })
 onBeforeUnmount(() => chart?.destroy())
 </script>
 

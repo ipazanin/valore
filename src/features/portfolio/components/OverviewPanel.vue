@@ -177,7 +177,7 @@ const unvalued = computed(() =>
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 1.7rem;
-  background: white;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
@@ -197,11 +197,11 @@ const unvalued = computed(() =>
 }
 .net-worth {
   background: var(--brand);
-  color: white;
+  color: var(--on-brand);
   border-color: var(--brand);
 }
 .net-worth small {
-  color: #d4e7db;
+  color: var(--on-brand-muted);
 }
 .detail-grid {
   display: grid;
@@ -218,7 +218,7 @@ const unvalued = computed(() =>
 .local-label span {
   width: 7px;
   height: 7px;
-  background: #5e886d;
+  background: var(--status-dot);
   border-radius: 50%;
 }
 .snapshot > p {

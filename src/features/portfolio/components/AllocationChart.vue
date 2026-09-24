@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArcElement, Chart, DoughnutController, Tooltip } from 'chart.js'
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { resolvedTheme } from '../../appearance/theme'
 import { calculateAllocation } from '../domain/allocation'
 import { MoneyDecimal } from '../domain/decimal'
 import { formatMoney } from '../domain/format'
@@ -22,14 +23,18 @@ const hasAssets = computed(() => new MoneyDecimal(props.overview.assets).greater
 const title = computed(() =>
   props.overview.incomplete ? 'Known asset allocation' : 'Asset allocation',
 )
-const categoryColors = {
-  cash: '#23735a',
-  investments: '#3b6eaa',
-  property: '#946838',
-  possessions: '#906095',
-  other: '#687b40',
-  lent: '#b35743',
-}
+const categoryColors = computed(() => {
+  resolvedTheme.value
+  const styles = getComputedStyle(document.documentElement)
+  return {
+    cash: styles.getPropertyValue('--chart-cash').trim(),
+    investments: styles.getPropertyValue('--chart-investments').trim(),
+    property: styles.getPropertyValue('--chart-property').trim(),
+    possessions: styles.getPropertyValue('--chart-possessions').trim(),
+    other: styles.getPropertyValue('--chart-other').trim(),
+    lent: styles.getPropertyValue('--chart-lent').trim(),
+  }
+})
 let chart: Chart<'doughnut'> | undefined
 
 function formatPercentage(percentage: string | null): string {
@@ -51,7 +56,7 @@ function renderChart(): void {
       datasets: [
         {
           data: allocation.value.map((category) => Number(category.percentage ?? '0')),
-          backgroundColor: allocation.value.map((category) => categoryColors[category.category]),
+          backgroundColor: allocation.value.map((category) => categoryColors.value[category.category]),
           borderColor: styles.getPropertyValue('--surface').trim(),
           borderWidth: 2,
         },
@@ -65,6 +70,11 @@ function renderChart(): void {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: styles.getPropertyValue('--surface').trim(),
+          titleColor: styles.getPropertyValue('--ink').trim(),
+          bodyColor: styles.getPropertyValue('--ink').trim(),
+          borderColor: styles.getPropertyValue('--line').trim(),
+          borderWidth: 1,
           titleFont: { family: styles.fontFamily },
           bodyFont: { family: styles.fontFamily },
           callbacks: {
@@ -81,7 +91,7 @@ function renderChart(): void {
   })
 }
 
-watch([allocation, canvas, () => props.currency], renderChart, { flush: 'post' })
+watch([allocation, canvas, () => props.currency, resolvedTheme], renderChart, { flush: 'post' })
 onBeforeUnmount(() => chart?.destroy())
 </script>
 

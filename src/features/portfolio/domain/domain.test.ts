@@ -255,7 +255,7 @@ describe('backup validation', () => {
   it('round trips all observations and settings', () => {
     const portfolio = portfolioFixture()
     const restored = parseBackup(serializeBackup(portfolio))
-    expect(restored).toMatchObject({ format: 'valore', version: 3, portfolio })
+    expect(restored).toMatchObject({ format: 'valore', version: 4, portfolio })
     expect(createBackup(portfolio).portfolio.observations).toHaveLength(5)
   })
 
@@ -266,7 +266,7 @@ describe('backup validation', () => {
     portfolio.observations = []
     expect(() => parseBackup(JSON.stringify(original))).toThrow('cash observation')
     const restored = parseBackup(serializeBackup(portfolio))
-    expect(restored.version).toBe(3)
+    expect(restored.version).toBe(4)
     expect(restored.portfolio).toEqual(portfolio)
     expect(calculateOverview(restored.portfolio).assets).toBe('0')
   })

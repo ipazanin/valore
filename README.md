@@ -1,6 +1,6 @@
 # Valore
 
-A local portfolio and net-worth tracker. Phase 1 is implemented and ready for practical testing: one reporting currency, manual records and prices, current totals, and JSON backups. Phase 2 adds dated entry and history corrections; subsequent capabilities are tracked in the [delivery plan](docs/plan.md).
+A local portfolio and net-worth tracker with one reporting currency, manual records and prices, dated history, charts, offline use, themes, and JSON backups. Physical-phone and personal-record checkpoints remain pending; subsequent capabilities are tracked in the [delivery plan](docs/plan.md).
 
 ## Run locally
 
@@ -37,6 +37,7 @@ The browser suite builds and serves the production app, covering desktop Chromiu
 - The asset allocation chart shows each category’s share of known assets, with exact amounts and percentages in its table. Unpriced holdings are named and excluded from the allocation denominator. All-zero assets show an empty state.
 - The assets/liabilities comparison uses two bars on the same zero-based monetary scale and keeps signed net worth visible. Incomplete assets are labeled as known assets.
 - History plots dated net worth, assets, and liabilities on a shared scale with independent visibility controls and calendar ranges. Stepped lines carry amounts forward; incomplete assets and net worth leave gaps. The dated table retains exact amounts, missing holdings, and the dates and ages of valuation sources. Changes describe recorded wealth, not investment returns.
+- Appearance follows the device by default. Choose Light, Dark, or Follow system above the portfolio view. The preference is saved in the portfolio and included in backups; older backups restore the system default. Theme changes preserve open form drafts and update chart colors.
 - Net worth is assets minus liabilities. Account totals are only grouping. Negative cash remains signed in the account and contributes its absolute amount once to liabilities.
 - Investment value is total quantity multiplied by unit price. A positive holding with no price makes known totals incomplete; it is never assigned a zero price. Blank price updates retain any saved price. An explicitly entered zero price is valid.
 - Amounts use decimal strings and decimal.js arithmetic, with up to 18 whole digits and 12 decimal places. Enter a decimal point without thousands separators. Totals display currency precision; calculations and backups retain full precision. Unit prices and quantities display their entered precision.
@@ -51,9 +52,9 @@ Browser storage is tied to the browser profile and site origin (scheme, host, an
 
 Local records are unencrypted. Clearing site data, using private browsing, browser storage limits/eviction, or losing the device can remove them. There is no server copy or recovery account.
 
-**Export backups regularly**, especially before replacing a portfolio or clearing browser storage. JSON backups are unencrypted and contain all supported records, instruments/listings, dated observations, and the reporting-currency setting. Keep them private and outside version control; `backups/` and `local-data/` are ignored.
+**Export backups regularly**, especially before replacing a portfolio or clearing browser storage. JSON backups are unencrypted and contain all supported records, instruments/listings, dated observations, and the currency and appearance settings. Keep them private and outside version control; `backups/` and `local-data/` are ignored.
 
-Backup format version 3 preserves closure dates and records with no observations after history deletion, and imports valid version 1 and 2 backups. It uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, and references and account-closure conditions before replacement. Version 1 retains its original required-observation checks. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
+Backup format version 4 preserves appearance settings, closure dates, and records with no observations after history deletion, and imports valid version 1, 2, and 3 backups. It uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, references, and account-closure conditions before replacement. Version 1 retains its original required-observation checks. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
 
 ## Offline use and installation
 
@@ -82,6 +83,7 @@ The repository uses **GitHub Actions** under **Settings → Pages → Build and 
 5. Try malformed JSON and a backup containing a foreign-currency record. Confirm rejection leaves the current portfolio intact.
 6. Try the forms with a keyboard and on an Android phone and iPhone, including backup download and file selection.
 7. On physical Android and iPhone devices, install where supported, wait for offline readiness, disconnect, reopen, edit, export and restore a backup, then reconnect. Repeat in a Firefox tab. Leave a draft open when an update becomes available; verify it remains intact, save, close every Valore window, and reopen to apply the update. This physical-device checkpoint remains pending.
+8. Switch Light, Dark, and Follow system, change device appearance, reload, and restore a backup. Inspect forms, chart labels, and tables in both themes.
 
 ## License
 
