@@ -4,16 +4,14 @@ import { usePortfolioStore } from '../application/store'
 import { formatMoney } from '../domain/format'
 import { latestObservation } from '../domain/calculations'
 import { localToday } from '../domain/dates'
-import { categoryLabels, displayDate } from './labels'
+import { displayDate } from './labels'
+import AllocationChart from './AllocationChart.vue'
 
 const emit = defineEmits<{ navigate: [tab: 'accounts' | 'records'] }>()
 const store = usePortfolioStore()
 const currency = computed(() => store.portfolio?.settings.reportingCurrency ?? '')
 const hasRecords = computed(() =>
   Boolean(store.portfolio?.accounts.length || store.portfolio?.records.length),
-)
-const assetCategories = computed(() =>
-  Object.entries(store.overview?.categories ?? {}).filter(([category]) => category !== 'debt'),
 )
 const unobserved = computed(() => {
   const portfolio = store.portfolio
@@ -123,27 +121,11 @@ const unvalued = computed(() =>
       </div>
     </div>
     <div class="detail-grid">
-      <article class="card allocation">
-        <div class="section-heading">
-          <h2>Assets by category</h2>
-          <span class="badge">{{ currency }}</span>
-        </div>
-        <dl>
-          <div v-for="[category, amount] in assetCategories" :key="category">
-            <dt>
-              {{ categoryLabels[category]
-              }}<small v-if="category === 'investments' && store.overview.incomplete"
-                >Known value · Incomplete</small
-              >
-            </dt>
-            <dd class="amount">{{ formatMoney(amount, currency) }}</dd>
-          </div>
-        </dl>
-        <div class="total-line">
-          <strong>{{ store.overview.incomplete ? 'Known assets' : 'Total assets' }}</strong
-          ><strong class="amount">{{ formatMoney(store.overview.assets, currency) }}</strong>
-        </div>
-      </article>
+      <AllocationChart
+        :overview="store.overview"
+        :currency="currency"
+        :unvalued-holdings="unvalued.map((holding) => `${holding.name} in ${holding.account}`)"
+      />
       <article class="card snapshot">
         <p class="eyebrow">At a glance</p>
         <h2>Keep today up to date</h2>
@@ -231,39 +213,6 @@ const unvalued = computed(() =>
   height: 7px;
   background: #5e886d;
   border-radius: 50%;
-}
-.allocation dl {
-  margin: 0;
-}
-.allocation dl > div,
-.total-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  padding: 0.8rem 0;
-}
-.allocation dt {
-  font-size: 0.9rem;
-}
-.allocation dt small {
-  display: block;
-  color: var(--warning);
-}
-.allocation dd {
-  margin: 0;
-  text-align: right;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-.total-line {
-  border-top: 1px solid var(--line);
-  margin-top: 0.6rem;
-  padding-bottom: 0;
-  font-size: 0.9rem;
-}
-.total-line .amount {
-  text-align: right;
 }
 .snapshot > p {
   font-size: 0.88rem;
