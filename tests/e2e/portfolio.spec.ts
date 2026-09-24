@@ -255,7 +255,7 @@ test('backup validation and preview preserve records until replacement; restore 
     ).toBeVisible()
     await otherPage.getByLabel('I understand that this will replace my current portfolio.').check()
     await otherPage.getByRole('button', { name: 'Replace portfolio' }).click()
-    await expect(otherPage.getByRole('status')).toContainText('Backup restored')
+    await expect(otherPage.getByRole('status').filter({ hasText: 'Backup restored' })).toBeVisible()
     await expect(otherPage.getByTestId('net-worth')).toHaveText('EUR 123.45')
     await otherPage.reload()
     await expect(otherPage.getByTestId('net-worth')).toHaveText('EUR 123.45')

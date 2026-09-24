@@ -7,6 +7,7 @@ import AccountsPanel from './features/portfolio/components/AccountsPanel.vue'
 import RecordsPanel from './features/portfolio/components/RecordsPanel.vue'
 import BackupPanel from './features/backup/BackupPanel.vue'
 import HistoryPanel from './features/portfolio/components/HistoryPanel.vue'
+import OfflineStatus from './features/offline/OfflineStatus.vue'
 
 const store = usePortfolioStore()
 type Tab = 'overview' | 'accounts' | 'records' | 'history' | 'backup'
@@ -78,6 +79,7 @@ function restored() {
         <BackupPanel v-show="tab === 'backup'" @restored="restored" />
       </template>
     </main>
+    <OfflineStatus />
     <footer>
       <span>Valore · Your portfolio, clearly.</span
       ><span>Stored only in this browser. Keep a backup.</span>

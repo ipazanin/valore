@@ -27,7 +27,7 @@ npx playwright install chromium firefox webkit
 npm run test:e2e
 ```
 
-The browser suite covers desktop Chromium and Firefox plus phone-sized Chromium and WebKit. Emulation does not replace testing on physical Android and iPhone devices. Unit persistence tests use real Dexie transactions with fake-indexeddb; browser tests exercise browser IndexedDB.
+The browser suite builds and serves the production app, covering desktop Chromium and Firefox plus phone-sized Chromium and WebKit. Emulation does not replace testing on physical Android and iPhone devices. Unit persistence tests use real Dexie transactions with fake-indexeddb; browser tests exercise browser IndexedDB. Offline tests stop their local origin server in every engine and also use browser offline emulation in Chromium/Firefox. WebKit uses the stopped-server check because of a [Playwright offline-emulation defect](https://github.com/microsoft/playwright/issues/42775). App icons derive from `public/icon.svg`; regenerate the PNG files with `node scripts/generate-icons.mjs` after installing Playwright Chromium.
 
 ## Portfolio behavior
 
@@ -49,11 +49,19 @@ Records persist in IndexedDB through Dexie. Pinia holds the shared application s
 
 Browser storage is tied to the browser profile and site origin (scheme, host, and port). Development and preview addresses can therefore hold different portfolios. Repository paths on the same origin share browser storage; Valore currently uses one database named `valore`. Use HTTPS when hosting, or localhost for development.
 
-Local records are unencrypted. Clearing site data, using private browsing, browser storage limits/eviction, or losing the device can remove them. There is no server copy or recovery account. The app is not yet a PWA and does not guarantee an offline launch.
+Local records are unencrypted. Clearing site data, using private browsing, browser storage limits/eviction, or losing the device can remove them. There is no server copy or recovery account.
 
 **Export backups regularly**, especially before replacing a portfolio or clearing browser storage. JSON backups are unencrypted and contain all supported records, instruments/listings, dated observations, and the reporting-currency setting. Keep them private and outside version control; `backups/` and `local-data/` are ignored.
 
 Backup format version 3 preserves closure dates and records with no observations after history deletion, and imports valid version 1 and 2 backups. It uses `format: "valore"`, `version`, `exportedAt`, and `portfolio`. Import accepts files up to 10 MB. The complete file is checked for supported fields, decimal amounts, dates, currencies, identifiers, and references and account-closure conditions before replacement. Version 1 retains its original required-observation checks. A preview and explicit confirmation are required. Replacement is atomic: validation or write failure leaves the existing portfolio intact. Restore replaces rather than merges. A form opened before another tab restores the portfolio must be reopened before saving.
+
+## Offline use and installation
+
+Open the production app while connected and wait for **Ready for offline use**. Its service worker caches application files, while records remain in IndexedDB. You can then reopen the app, view and edit records, calculate totals, and export or restore backups without a connection. Clearing site storage removes both records and offline access. Development mode does not install a service worker; test offline behavior with `npm run build` and `npm run preview`.
+
+Updates download in the background and wait while any Valore tab or app window remains open. The update notice asks you to save drafts and close every Valore window before reopening. Updates never force a reload. Unsaved drafts remain in the open page; closing a page discards its unsaved drafts. No quote refresh runs while the app is closed.
+
+Installation is optional; normal browser tabs support all portfolio features. Android Chrome offers installation and Firefox offers Add to Home screen. On iPhone and iPad, use Share and Add to Home Screen in a supported browser. Desktop Chrome and Edge offer installation; Safari on macOS Sonoma or later offers Add to Dock. Firefox's desktop web apps are available on supported Windows installations; macOS users should use a normal Firefox tab, and Linux support is not enabled by default. See the [MDN installation guide](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable), [Mozilla Windows guidance](https://support.mozilla.org/en-US/kb/web-apps-firefox-windows), and [Firefox platform support](https://firefox-source-docs.mozilla.org/browser/components/taskbartabs/docs/index.html). An installed app can have separate storage; export a backup before switching contexts.
 
 ## Static hosting
 
@@ -73,6 +81,7 @@ The repository uses **GitHub Actions** under **Settings → Pages → Build and 
 4. Export a backup. Preview it, cancel once, then restore it in another browser. Confirm records, listing identities, dates, and currency survive.
 5. Try malformed JSON and a backup containing a foreign-currency record. Confirm rejection leaves the current portfolio intact.
 6. Try the forms with a keyboard and on an Android phone and iPhone, including backup download and file selection.
+7. On physical Android and iPhone devices, install where supported, wait for offline readiness, disconnect, reopen, edit, export and restore a backup, then reconnect. Repeat in a Firefox tab. Leave a draft open when an update becomes available; verify it remains intact, save, close every Valore window, and reopen to apply the update. This physical-device checkpoint remains pending.
 
 ## License
 
