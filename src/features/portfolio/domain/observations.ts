@@ -2,6 +2,28 @@ import { isLocalDate, localToday } from './dates'
 import { normalizeAmount } from './decimal'
 import type { Observation, ObservationKind, Portfolio } from './types'
 
+export function latestObservation(
+  portfolio: Portfolio,
+  kind: ObservationKind,
+  subjectId: string,
+  onDate = localToday(),
+): Observation | undefined {
+  let latest: Observation | undefined
+  for (const observation of portfolio.observations) {
+    if (
+      observation.kind !== kind ||
+      observation.subjectId !== subjectId ||
+      observation.effectiveDate > onDate
+    ) {
+      continue
+    }
+    if (!latest || observation.effectiveDate > latest.effectiveDate) {
+      latest = observation
+    }
+  }
+  return latest
+}
+
 function requireEffectiveDate(effectiveDate: string): void {
   if (!isLocalDate(effectiveDate) || effectiveDate > localToday()) {
     throw new Error('Choose a valid past or present observation date.')

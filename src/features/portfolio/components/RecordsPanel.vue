@@ -6,18 +6,25 @@ import { latestObservation } from '../domain/calculations'
 import { formatMoney } from '../domain/format'
 import { recordCategories, displayDate } from './labels'
 import RecordForm from './RecordForm.vue'
+import ClosureControl from './ClosureControl.vue'
 
 const store = usePortfolioStore()
 const formOpen = ref(false)
 const editingRecord = ref<AssetRecord>()
 const message = ref('')
 const heading = ref<HTMLElement>()
+const showArchived = ref(false)
 const currency = computed(() => store.portfolio?.settings.reportingCurrency ?? '')
+const hasArchived = computed(() =>
+  Boolean(store.portfolio?.records.some((record) => record.closedOn)),
+)
 const records = computed(() =>
-  (store.portfolio?.records ?? []).map((record) => ({
-    ...record,
-    observation: latestObservation(store.portfolio!, 'valuation', record.id),
-  })),
+  (store.portfolio?.records ?? [])
+    .filter((record) => showArchived.value || !record.closedOn)
+    .map((record) => ({
+      ...record,
+      observation: latestObservation(store.portfolio!, 'valuation', record.id),
+    })),
 )
 function openRecord(record?: AssetRecord) {
   editingRecord.value = record
@@ -27,6 +34,11 @@ function openRecord(record?: AssetRecord) {
 async function closeForm(saved = false) {
   formOpen.value = false
   if (saved) message.value = 'Saved in this browser.'
+  await nextTick()
+  heading.value?.focus()
+}
+async function closureSaved() {
+  message.value = 'Closure saved in this browser.'
   await nextTick()
   heading.value?.focus()
 }
@@ -42,6 +54,9 @@ async function closeForm(saved = false) {
       <button v-if="!formOpen" @click="openRecord()">+ Add record</button>
     </div>
     <p v-if="message" role="status" class="notice">{{ message }}</p>
+    <label v-if="hasArchived" class="archive-toggle">
+      <input v-model="showArchived" type="checkbox" /> Show archived assets and debts
+    </label>
     <RecordForm
       v-if="formOpen"
       :key="editingRecord?.id ?? 'new'"
@@ -50,18 +65,24 @@ async function closeForm(saved = false) {
       @cancel="closeForm()"
     />
     <div v-if="!records.length && !formOpen" class="empty">
-      <h2>The rest of your financial picture</h2>
-      <p>Add property, a vehicle, other possessions, money lent, or an outstanding debt.</p>
-      <button class="secondary" @click="openRecord()">Add your first record</button>
+      <h2>{{ hasArchived ? 'No active assets or debts' : 'The rest of your financial picture' }}</h2>
+      <p v-if="hasArchived">Show archived assets and debts to review earlier records.</p>
+      <p v-else>Add property, a vehicle, other possessions, money lent, or an outstanding debt.</p>
+      <button class="secondary" @click="openRecord()">Add a record</button>
     </div>
     <div v-if="records.length" class="card record-list">
       <article v-for="record in records" :key="record.id" class="record">
         <div class="description">
           <span class="badge">{{ recordCategories[record.category] }}</span>
+          <span v-if="record.closedOn" class="badge archived-label">
+            Archived {{ displayDate(record.closedOn) }}
+          </span>
           <h2>{{ record.name }}</h2>
           <small v-if="record.observation"
             >{{
-              record.category === 'debt' || record.category === 'lent'
+              record.closedOn
+                ? 'Last saved'
+                : record.category === 'debt' || record.category === 'lent'
                 ? 'Outstanding'
                 : 'Resale estimate'
             }}
@@ -73,6 +94,7 @@ async function closeForm(saved = false) {
             record.observation ? formatMoney(record.observation.amount, currency) : 'No observation'
           }}</strong
           ><button
+            v-if="!record.closedOn"
             class="quiet"
             :disabled="store.saving"
             :aria-label="`Update ${record.name}`"
@@ -80,6 +102,15 @@ async function closeForm(saved = false) {
           >
             Update
           </button>
+        </div>
+        <div class="record-closure">
+          <ClosureControl
+            kind="record"
+            :subject-id="record.id"
+            :subject-label="record.name"
+            :closed-on="record.closedOn"
+            @done="closureSaved"
+          />
         </div>
       </article>
     </div>
@@ -98,6 +129,7 @@ async function closeForm(saved = false) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   padding-block: 1.3rem;
 }
@@ -117,6 +149,23 @@ async function closeForm(saved = false) {
   align-items: center;
   gap: 1rem;
   text-align: right;
+}
+.record-closure {
+  width: 100%;
+}
+.archived-label {
+  margin-left: 0.5rem;
+}
+.archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+.archive-toggle input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
 }
 .debt {
   color: var(--danger);

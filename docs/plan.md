@@ -81,6 +81,8 @@ Deliver history first, then offline/mobile improvements, with a test checkpoint 
 
 ### 2A. Dated history and visualization
 
+Dated observation editing, confirmed deletion, and dated archival are implemented. Users may delete every observation while keeping its named record; a record with no observations has no recorded value. Account closure still requires explicit zero balances and quantities, and corrections/imports revalidate that condition.
+
 - Allow past and present dated balances, valuations, total quantities, and manual prices.
 - Carry each recorded amount or quantity forward until its next update or closure. Show its age; do not apply it before its first observation.
 - Preserve earlier quantities when a later total changes. Historical quotes alone must never imply past ownership.

@@ -255,18 +255,18 @@ describe('backup validation', () => {
   it('round trips all observations and settings', () => {
     const portfolio = portfolioFixture()
     const restored = parseBackup(serializeBackup(portfolio))
-    expect(restored).toMatchObject({ format: 'valore', version: 2, portfolio })
+    expect(restored).toMatchObject({ format: 'valore', version: 3, portfolio })
     expect(createBackup(portfolio).portfolio.observations).toHaveLength(5)
   })
 
-  it('preserves version 1 backups and supports records without observations in version 2', () => {
+  it('preserves version 1 backups and supports records without observations in newer versions', () => {
     const portfolio = portfolioFixture()
     const original = { ...createBackup(portfolio), version: 1 }
     expect(parseBackup(JSON.stringify(original)).portfolio).toEqual(portfolio)
     portfolio.observations = []
     expect(() => parseBackup(JSON.stringify(original))).toThrow('cash observation')
     const restored = parseBackup(serializeBackup(portfolio))
-    expect(restored.version).toBe(2)
+    expect(restored.version).toBe(3)
     expect(restored.portfolio).toEqual(portfolio)
     expect(calculateOverview(restored.portfolio).assets).toBe('0')
   })
@@ -294,7 +294,7 @@ describe('backup validation', () => {
             (observation) => observation.kind !== 'quantity',
           )
         }),
-        true,
+        { requireObservations: true },
       ),
     ).toThrow('needs a quantity observation')
     expect(() =>
@@ -325,7 +325,7 @@ describe('backup validation', () => {
         changed(fixture, (copy) => {
           copy.observations = copy.observations.filter((observation) => observation.kind !== 'cash')
         }),
-        true,
+        { requireObservations: true },
       ),
     ).toThrow('needs a cash observation')
     expect(() =>
@@ -335,7 +335,7 @@ describe('backup validation', () => {
             (observation) => observation.kind !== 'valuation' || observation.subjectId !== houseId,
           )
         }),
-        true,
+        { requireObservations: true },
       ),
     ).toThrow('needs a valuation observation')
     expect(() =>

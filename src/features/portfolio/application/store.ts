@@ -2,6 +2,7 @@ import { computed, onScopeDispose, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { parseBackup, serializeBackup, type Backup } from '../../backup/backup'
 import { calculateOverview } from '../domain/calculations'
+import { setClosure, type ClosureKind } from '../domain/closure'
 import { normalizeAmount } from '../domain/decimal'
 import {
   correctObservation,
@@ -413,6 +414,20 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     await save(() => parseBackup(JSON.stringify(backup)).portfolio, portfolioEpoch.value, true)
   }
 
+  async function saveClosure(
+    kind: ClosureKind,
+    id: string,
+    closedOn: string | null,
+    expectedPortfolioEpoch: string,
+  ): Promise<void> {
+    await save((current) => {
+      requireExpectedEpoch(expectedPortfolioEpoch)
+      const snapshot = requirePortfolio(current)
+      setClosure(snapshot, kind, id, closedOn)
+      return snapshot
+    }, expectedPortfolioEpoch)
+  }
+
   async function exportJson(): Promise<string> {
     if (!loaded) {
       throw new Error('Portfolio storage has not loaded successfully.')
@@ -443,6 +458,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     saveHolding,
     saveObservation,
     deleteObservation,
+    saveClosure,
     restore,
     exportJson,
   }

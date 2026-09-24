@@ -7,6 +7,7 @@ import type { Account, Holding } from '../domain/types'
 import { displayDate } from './labels'
 import AccountForm from './AccountForm.vue'
 import HoldingForm from './HoldingForm.vue'
+import ClosureControl from './ClosureControl.vue'
 
 const store = usePortfolioStore()
 const currency = computed(() => store.portfolio?.settings.reportingCurrency ?? '')
@@ -15,6 +16,7 @@ const accountFormOpen = ref(false)
 const holdingDraft = ref<{ accountId: string; holding?: Holding }>()
 const message = ref('')
 const heading = ref<HTMLElement>()
+const showArchived = ref(false)
 function openAccount(account?: Account) {
   editingAccount.value = account
   holdingDraft.value = undefined
@@ -33,31 +35,48 @@ async function closeForm(saved = false) {
   await nextTick()
   heading.value?.focus()
 }
+async function closureSaved() {
+  message.value = 'Closure saved in this browser.'
+  await nextTick()
+  heading.value?.focus()
+}
+const hasArchived = computed(() =>
+  Boolean(
+    store.portfolio?.accounts.some((account) => account.closedOn) ||
+      store.portfolio?.holdings.some((holding) => holding.closedOn),
+  ),
+)
 const accounts = computed(() =>
-  (store.portfolio?.accounts ?? []).map((account) => ({
-    ...account,
-    summary: store.overview?.accounts.find((summary) => summary.accountId === account.id),
-    cashObservation: store.portfolio
-      ? latestObservation(store.portfolio, 'cash', account.id)
-      : undefined,
-    holdings: (store.portfolio?.holdings ?? [])
-      .filter((holding) => holding.accountId === account.id)
-      .map((holding) => {
-        const listing = store.portfolio!.listings.find(
-          (listing) => listing.id === holding.listingId,
-        )!
-        return {
-          ...holding,
-          listing,
-          instrument: store.portfolio!.instruments.find(
-            (instrument) => instrument.id === listing.instrumentId,
-          )!,
-          quantity: latestObservation(store.portfolio!, 'quantity', holding.id),
-          price: latestObservation(store.portfolio!, 'price', listing.id),
-          amount: holdingValue(store.portfolio!, holding.id),
-        }
-      }),
-  })),
+  (store.portfolio?.accounts ?? [])
+    .filter((account) => showArchived.value || !account.closedOn)
+    .map((account) => ({
+      ...account,
+      summary: store.overview?.accounts.find((summary) => summary.accountId === account.id),
+      cashObservation: store.portfolio
+        ? latestObservation(store.portfolio, 'cash', account.id)
+        : undefined,
+      holdings: (store.portfolio?.holdings ?? [])
+        .filter((holding) => holding.accountId === account.id)
+        .filter((holding) => showArchived.value || !holding.closedOn)
+        .map((holding) => {
+          const listing = store.portfolio!.listings.find(
+            (listing) => listing.id === holding.listingId,
+          )!
+          return {
+            ...holding,
+            listing,
+            instrument: store.portfolio!.instruments.find(
+              (instrument) => instrument.id === listing.instrumentId,
+            )!,
+            quantity: latestObservation(store.portfolio!, 'quantity', holding.id),
+            price: latestObservation(store.portfolio!, 'price', listing.id),
+            amount:
+              account.closedOn || holding.closedOn
+                ? null
+                : holdingValue(store.portfolio!, holding.id),
+          }
+        }),
+    })),
 )
 </script>
 
@@ -71,6 +90,9 @@ const accounts = computed(() =>
       <button v-if="!accountFormOpen && !holdingDraft" @click="openAccount()">+ Add account</button>
     </div>
     <p v-if="message" role="status" class="notice">{{ message }}</p>
+    <label v-if="hasArchived" class="archive-toggle">
+      <input v-model="showArchived" type="checkbox" /> Show archived accounts and holdings
+    </label>
     <AccountForm
       v-if="accountFormOpen"
       :key="editingAccount?.id ?? 'new'"
@@ -86,11 +108,12 @@ const accounts = computed(() =>
       @cancel="closeForm()"
     />
     <div v-if="!accounts.length && !accountFormOpen" class="empty">
-      <h2>A home for your cash and investments</h2>
-      <p>
+      <h2>{{ hasArchived ? 'No active accounts' : 'A home for your cash and investments' }}</h2>
+      <p v-if="hasArchived">Show archived accounts and holdings to review earlier records.</p>
+      <p v-else>
         Add a named account, enter its cash balance, then add any stocks or ETFs you hold there.
       </p>
-      <button class="secondary" @click="openAccount()">Add your first account</button>
+      <button class="secondary" @click="openAccount()">Add an account</button>
     </div>
     <article v-for="account in accounts" :key="account.id" class="card account">
       <div class="account-heading">
@@ -101,13 +124,17 @@ const accounts = computed(() =>
           <div>
             <h2>{{ account.name }}</h2>
             <span class="muted">{{ currency }} account</span>
+            <span v-if="account.closedOn" class="badge archived-label">
+              Archived {{ displayDate(account.closedOn) }}
+            </span>
           </div>
         </div>
         <div class="account-total">
-          <small>{{
+          <small v-if="account.closedOn">Excluded from current totals</small>
+          <small v-else>{{
             account.summary?.incomplete ? 'Known account total · Incomplete' : 'Account total'
-          }}</small
-          ><strong class="amount">{{
+          }}</small>
+          <strong v-if="!account.closedOn" class="amount">{{
             formatMoney(account.summary?.total ?? '0', currency)
           }}</strong>
         </div>
@@ -120,12 +147,13 @@ const accounts = computed(() =>
           >
         </div>
         <div class="row-end">
-          <span class="amount" :class="{ negative: account.summary?.cash.startsWith('-') }">{{
+          <span class="amount" :class="{ negative: account.cashObservation?.amount.startsWith('-') }">{{
             account.cashObservation
-              ? formatMoney(account.summary?.cash ?? '0', currency)
+              ? formatMoney(account.cashObservation.amount, currency)
               : 'No observation'
           }}</span
           ><button
+            v-if="!account.closedOn"
             class="quiet"
             :disabled="store.saving"
             :aria-label="`Update ${account.name} cash`"
@@ -139,6 +167,12 @@ const accounts = computed(() =>
         <li v-for="holding in account.holdings" :key="holding.id">
           <div class="holding-details">
             <strong>{{ holding.instrument.name }}</strong>
+            <span v-if="holding.closedOn" class="badge archived-label">
+              Archived {{ displayDate(holding.closedOn) }}
+            </span>
+            <span v-else-if="account.closedOn" class="badge archived-label">
+              Excluded with archived account
+            </span>
             <small
               >{{ holding.listing.symbol }} · {{ holding.listing.exchange }} ·
               {{ holding.listing.currency
@@ -163,12 +197,14 @@ const accounts = computed(() =>
             >
           </div>
           <div class="row-end">
-            <span v-if="!holding.quantity" class="muted">No valuation</span>
+            <span v-if="account.closedOn || holding.closedOn" class="muted">Archived</span>
+            <span v-else-if="!holding.quantity" class="muted">No valuation</span>
             <span v-else-if="holding.amount === null" class="badge warning"
               >Unvalued · Price needed</span
             >
             <span v-else class="amount">{{ formatMoney(holding.amount, currency) }}</span>
             <button
+              v-if="!account.closedOn && !holding.closedOn"
               class="quiet"
               :disabled="store.saving"
               :aria-label="`Update ${holding.instrument.name} in ${account.name}`"
@@ -177,6 +213,15 @@ const accounts = computed(() =>
               Update
             </button>
           </div>
+          <div class="holding-closure">
+            <ClosureControl
+              kind="holding"
+              :subject-id="holding.id"
+              :subject-label="`${holding.instrument.name} in ${account.name}`"
+              :closed-on="holding.closedOn"
+              @done="closureSaved"
+            />
+          </div>
         </li>
       </ul>
       <div class="account-footer">
@@ -184,6 +229,7 @@ const accounts = computed(() =>
           >{{ account.holdings.length }}
           {{ account.holdings.length === 1 ? 'holding' : 'holdings' }}</small
         ><button
+          v-if="!account.closedOn"
           class="secondary"
           :disabled="store.saving"
           :aria-label="`Add holding to ${account.name}`"
@@ -191,6 +237,15 @@ const accounts = computed(() =>
         >
           + Add holding
         </button>
+      </div>
+      <div class="account-closure">
+        <ClosureControl
+          kind="account"
+          :subject-id="account.id"
+          :subject-label="account.name"
+          :closed-on="account.closedOn"
+          @done="closureSaved"
+        />
       </div>
     </article>
     <p v-if="accounts.length" class="muted footnote">
@@ -212,6 +267,9 @@ const accounts = computed(() =>
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+.holdings li {
+  flex-wrap: wrap;
 }
 .account-heading {
   padding-bottom: 1.4rem;
@@ -286,6 +344,27 @@ const accounts = computed(() =>
   border-top: 1px solid var(--line);
   padding-block: 1rem;
 }
+.account-closure {
+  border-top: 1px solid var(--line);
+  padding: 0.25rem 0 0.75rem;
+}
+.holding-closure {
+  width: 100%;
+}
+.archived-label {
+  margin-left: 0.5rem;
+}
+.archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+.archive-toggle input {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+}
 .footnote {
   font-size: 0.85rem;
 }
@@ -296,9 +375,6 @@ const accounts = computed(() =>
   }
   .account-total {
     text-align: left;
-  }
-  .holdings li {
-    flex-wrap: wrap;
   }
   .holdings .row-end {
     width: 100%;

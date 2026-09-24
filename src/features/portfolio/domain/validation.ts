@@ -1,4 +1,5 @@
 import { isSupportedCurrency } from './currency'
+import { validateClosures } from './closure'
 import { isLocalDate, isUtcTimestamp, localToday } from './dates'
 import { normalizeAmount } from './decimal'
 import type { ObservationKind, Portfolio, RecordCategory } from './types'
@@ -22,7 +23,12 @@ const recordCategories = new Set<RecordCategory>([
 const observationKinds = new Set<ObservationKind>(['cash', 'quantity', 'price', 'valuation'])
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function strictObject(input: unknown, keys: string[], location: string): Record<string, unknown> {
+function strictObject(
+  input: unknown,
+  keys: string[],
+  location: string,
+  optionalKeys: string[] = [],
+): Record<string, unknown> {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error(`${location} must be an object`)
   }
@@ -34,7 +40,7 @@ function strictObject(input: unknown, keys: string[], location: string): Record<
     }
   }
   for (const key of actualKeys) {
-    if (!keys.includes(key)) {
+    if (!keys.includes(key) && !optionalKeys.includes(key)) {
       throw new Error(`${location}.${key} is not supported`)
     }
   }
@@ -119,14 +125,23 @@ function uniqueIdentity(identity: string, known: Set<string>, location: string):
   known.add(identity)
 }
 
-export function validatePortfolio(input: unknown, requireObservations = false): Portfolio {
+export function validatePortfolio(
+  input: unknown,
+  settings: { requireObservations?: boolean; allowClosures?: boolean } = {},
+): Portfolio {
+  const { requireObservations = false, allowClosures = true } = settings
+  const closureKeys = allowClosures ? ['closedOn'] : []
   const portfolio = strictObject(input, portfolioKeys, 'portfolio')
-  const settings = strictObject(portfolio.settings, ['reportingCurrency', 'createdAt'], 'settings')
-  const reportingCurrency = requiredString(settings.reportingCurrency, 'settings.reportingCurrency')
+  const portfolioSettings = strictObject(
+    portfolio.settings, ['reportingCurrency', 'createdAt'], 'settings',
+  )
+  const reportingCurrency = requiredString(
+    portfolioSettings.reportingCurrency, 'settings.reportingCurrency',
+  )
   if (!isSupportedCurrency(reportingCurrency)) {
     throw new Error(`Unsupported reporting currency: ${reportingCurrency}`)
   }
-  const portfolioCreatedAt = timestamp(settings.createdAt, 'settings.createdAt')
+  const portfolioCreatedAt = timestamp(portfolioSettings.createdAt, 'settings.createdAt')
   const allIds = new Set<string>()
 
   const accountIds = new Set<string>()
@@ -136,6 +151,7 @@ export function validatePortfolio(input: unknown, requireObservations = false): 
       inputAccount,
       ['id', 'name', 'currency', 'createdAt', 'updatedAt'],
       location,
+      closureKeys,
     )
     const { id } = metadata(account, location, allIds, portfolioCreatedAt)
     name(account.name, `${location}.name`)
@@ -206,6 +222,7 @@ export function validatePortfolio(input: unknown, requireObservations = false): 
       inputHolding,
       ['id', 'accountId', 'listingId', 'createdAt', 'updatedAt'],
       location,
+      closureKeys,
     )
     const { id } = metadata(holding, location, allIds, portfolioCreatedAt)
     const accountId = requiredString(holding.accountId, `${location}.accountId`)
@@ -228,6 +245,7 @@ export function validatePortfolio(input: unknown, requireObservations = false): 
       inputRecord,
       ['id', 'name', 'category', 'currency', 'createdAt', 'updatedAt'],
       location,
+      closureKeys,
     )
     const { id } = metadata(record, location, allIds, portfolioCreatedAt)
     name(record.name, `${location}.name`)
@@ -307,5 +325,6 @@ export function validatePortfolio(input: unknown, requireObservations = false): 
       throw new Error(`Record ${recordId} needs a valuation observation`)
   }
 
+  validateClosures(input as Portfolio)
   return input as Portfolio
 }

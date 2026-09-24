@@ -47,7 +47,9 @@ const subjects = computed<HistorySubject[]>(() => {
       key: `quantity:${holding.id}`,
       kind: 'quantity',
       id: holding.id,
-      label: `Quantity · ${instrument?.name ?? 'Investment'} (${listing?.symbol ?? 'Unknown listing'}) · ${account?.name ?? 'Unknown account'}`,
+      label:
+        `Quantity · ${instrument?.name ?? 'Investment'} ` +
+        `(${listing?.symbol ?? 'Unknown listing'}) · ${account?.name ?? 'Unknown account'}`,
     }
   })
   const prices: HistorySubject[] = portfolio.listings.map((listing) => {
@@ -58,7 +60,9 @@ const subjects = computed<HistorySubject[]>(() => {
       key: `price:${listing.id}`,
       kind: 'price',
       id: listing.id,
-      label: `Shared price · ${instrument?.name ?? 'Investment'} (${listing.symbol} · ${listing.exchange})`,
+      label:
+        `Shared price · ${instrument?.name ?? 'Investment'} ` +
+        `(${listing.symbol} · ${listing.exchange})`,
     }
   })
   const valuations: HistorySubject[] = portfolio.records.map((record) => ({
@@ -83,6 +87,31 @@ watch(
 const selectedSubject = computed(() =>
   subjects.value.find((subject) => subject.key === selectedKey.value),
 )
+const closure = computed(() => {
+  const subject = selectedSubject.value
+  const portfolio = store.portfolio
+  if (!subject || !portfolio) return null
+  if (subject.kind === 'cash') {
+    const account = portfolio.accounts.find((candidate) => candidate.id === subject.id)
+    return account?.closedOn ? { date: account.closedOn, reason: 'This account' } : null
+  }
+  if (subject.kind === 'valuation') {
+    const record = portfolio.records.find((candidate) => candidate.id === subject.id)
+    return record?.closedOn ? { date: record.closedOn, reason: 'This record' } : null
+  }
+  if (subject.kind === 'quantity') {
+    const holding = portfolio.holdings.find((candidate) => candidate.id === subject.id)
+    const account = portfolio.accounts.find((candidate) => candidate.id === holding?.accountId)
+    if (holding?.closedOn && (!account?.closedOn || holding.closedOn <= account.closedOn)) {
+      return { date: holding.closedOn, reason: 'This holding' }
+    }
+    return account?.closedOn ? { date: account.closedOn, reason: 'Its account' } : null
+  }
+  return null
+})
+const excludedOnAsOfDate = computed(
+  () => validAsOfDate.value && Boolean(closure.value && asOfDate.value >= closure.value.date),
+)
 const observations = computed(() => {
   const subject = selectedSubject.value
   if (!subject) return []
@@ -94,7 +123,7 @@ const observations = computed(() => {
 })
 const applicable = computed(() => {
   const subject = selectedSubject.value
-  return subject && store.portfolio && validAsOfDate.value
+  return subject && store.portfolio && validAsOfDate.value && !excludedOnAsOfDate.value
     ? latestObservation(store.portfolio, subject.kind, subject.id, asOfDate.value)
     : undefined
 })
@@ -206,7 +235,14 @@ async function deleteObservation() {
           {{ ageDays === 0 ? 'Same day' : `${ageDays} ${ageDays === 1 ? 'day' : 'days'} old` }}
         </p>
         <p v-else-if="!validAsOfDate" class="muted">Enter a valid current or past date.</p>
+        <p v-else-if="excludedOnAsOfDate" class="muted">
+          No value applies on this date because this record is archived.
+        </p>
         <p v-else class="muted">No observation applies on this date.</p>
+        <p v-if="closure" class="notice archive-notice">
+          {{ closure.reason }} is archived from {{ displayDate(closure.date) }}. Earlier saved
+          observations remain below.
+        </p>
         <p v-if="selectedSubject?.kind === 'price'" class="muted">
           This listing price is shared by holdings in every account.
         </p>
@@ -297,6 +333,9 @@ async function deleteObservation() {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
+}
+.archive-notice {
+  margin-bottom: 0;
 }
 .observation-list {
   display: grid;

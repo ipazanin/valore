@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { usePortfolioStore } from '../application/store'
 import { formatMoney } from '../domain/format'
+import { isClosed } from '../domain/closure'
 import { latestObservation } from '../domain/calculations'
 import { localToday } from '../domain/dates'
 import { displayDate } from './labels'
@@ -19,13 +20,17 @@ const unobserved = computed(() => {
   if (!portfolio) return []
   return [
     ...portfolio.accounts
-      .filter((account) => !latestObservation(portfolio, 'cash', account.id))
+      .filter((account) => !isClosed(account) && !latestObservation(portfolio, 'cash', account.id))
       .map((account) => ({ id: account.id, name: `${account.name} cash` })),
     ...portfolio.records
-      .filter((record) => !latestObservation(portfolio, 'valuation', record.id))
+      .filter((record) => !isClosed(record) && !latestObservation(portfolio, 'valuation', record.id))
       .map((record) => ({ id: record.id, name: record.name })),
     ...portfolio.holdings
-      .filter((holding) => !latestObservation(portfolio, 'quantity', holding.id))
+      .filter((holding) =>
+        !isClosed(holding) &&
+        !isClosed(portfolio.accounts.find((account) => account.id === holding.accountId)!) &&
+        !latestObservation(portfolio, 'quantity', holding.id),
+      )
       .map((holding) => {
         const listing = portfolio.listings.find((listing) => listing.id === holding.listingId)!
         const instrument = portfolio.instruments.find(

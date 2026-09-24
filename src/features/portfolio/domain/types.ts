@@ -5,6 +5,7 @@ export type ObservationKind = 'cash' | 'quantity' | 'price' | 'valuation'
 
 export interface Account {
   id: string
+  closedOn?: string
   name: string
   currency: Currency
   createdAt: string
@@ -32,6 +33,7 @@ export interface Listing {
 
 export interface Holding {
   id: string
+  closedOn?: string
   accountId: string
   listingId: string
   createdAt: string
@@ -40,6 +42,7 @@ export interface Holding {
 
 export interface AssetRecord {
   id: string
+  closedOn?: string
   name: string
   category: RecordCategory
   currency: Currency

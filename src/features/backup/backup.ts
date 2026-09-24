@@ -6,7 +6,7 @@ const MAX_BACKUP_BYTES = 10 * 1024 * 1024
 
 export interface Backup {
   format: 'valore'
-  version: 1 | 2
+  version: 1 | 2 | 3
   exportedAt: string
   portfolio: Portfolio
 }
@@ -26,13 +26,16 @@ function validateBackup(input: unknown): Backup {
   if (backup.format !== 'valore') {
     throw new Error('Unsupported backup format')
   }
-  if (backup.version !== 1 && backup.version !== 2) {
+  if (backup.version !== 1 && backup.version !== 2 && backup.version !== 3) {
     throw new Error('Unsupported backup version')
   }
   if (typeof backup.exportedAt !== 'string' || !isUtcTimestamp(backup.exportedAt)) {
     throw new Error('Backup export time must be a UTC ISO timestamp')
   }
-  const portfolio = validatePortfolio(backup.portfolio, backup.version === 1)
+  const portfolio = validatePortfolio(backup.portfolio, {
+    requireObservations: backup.version === 1,
+    allowClosures: backup.version >= 3,
+  })
   const timestamps = [
     portfolio.settings.createdAt,
     ...portfolio.accounts.flatMap((account) => [account.createdAt, account.updatedAt]),
@@ -67,7 +70,7 @@ export function createBackup(portfolio: Portfolio, now: Date = new Date()): Back
   if (Number.isNaN(now.getTime())) {
     throw new Error('Invalid export time')
   }
-  return validateBackup({ format: 'valore', version: 2, exportedAt: now.toISOString(), portfolio })
+  return validateBackup({ format: 'valore', version: 3, exportedAt: now.toISOString(), portfolio })
 }
 
 export function serializeBackup(portfolio: Portfolio): string {

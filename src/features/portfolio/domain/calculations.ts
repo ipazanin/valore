@@ -1,28 +1,10 @@
 import { MoneyDecimal } from './decimal'
+import { isClosed } from './closure'
 import { localToday } from './dates'
-import type { AccountSummary, Observation, ObservationKind, Overview, Portfolio } from './types'
+import type { AccountSummary, Overview, Portfolio } from './types'
+import { latestObservation } from './observations'
 
-export function latestObservation(
-  portfolio: Portfolio,
-  kind: ObservationKind,
-  subjectId: string,
-  onDate = localToday(),
-): Observation | undefined {
-  let latest: Observation | undefined
-  for (const observation of portfolio.observations) {
-    if (
-      observation.kind !== kind ||
-      observation.subjectId !== subjectId ||
-      observation.effectiveDate > onDate
-    ) {
-      continue
-    }
-    if (!latest || observation.effectiveDate > latest.effectiveDate) {
-      latest = observation
-    }
-  }
-  return latest
-}
+export { latestObservation } from './observations'
 
 export function holdingValue(
   portfolio: Portfolio,
@@ -32,6 +14,10 @@ export function holdingValue(
   const holding = portfolio.holdings.find((candidate) => candidate.id === holdingId)
   if (!holding) {
     throw new Error(`Unknown holding: ${holdingId}`)
+  }
+  const account = portfolio.accounts.find((candidate) => candidate.id === holding.accountId)
+  if (isClosed(holding, onDate) || (account && isClosed(account, onDate))) {
+    return '0'
   }
 
   const quantity = latestObservation(portfolio, 'quantity', holdingId, onDate)
@@ -64,6 +50,7 @@ export function calculateOverview(portfolio: Portfolio, onDate = localToday()): 
   const accounts: AccountSummary[] = []
 
   for (const account of portfolio.accounts) {
+    if (isClosed(account, onDate)) continue
     const cash = new MoneyDecimal(
       latestObservation(portfolio, 'cash', account.id, onDate)?.amount ?? '0',
     )
@@ -97,6 +84,7 @@ export function calculateOverview(portfolio: Portfolio, onDate = localToday()): 
   }
 
   for (const record of portfolio.records) {
+    if (isClosed(record, onDate)) continue
     const valuation = latestObservation(portfolio, 'valuation', record.id, onDate)
     if (valuation) {
       categories[record.category] = new MoneyDecimal(categories[record.category])
